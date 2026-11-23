@@ -141,7 +141,11 @@ Writer.prototype.f32 = function (v) {
 Writer.prototype.raw = function (arr) { for (var i = 0; i < arr.length; i++) this.u8(arr[i]); };
 Writer.prototype.fill = function (n, v) { for (var i = 0; i < n; i++) this.u8(v); };
 Writer.prototype.len = function () { return this.b.length; };
-Writer.prototype.result = function () { return Uint8Array.from(this.b); };
+Writer.prototype.result = function () {
+  var u8 = new Uint8Array(this.b.length);
+  for (var i = 0; i < this.b.length; i++) u8[i] = this.b[i] & 255;
+  return u8;
+};
 
 /* ============================ text formatting ========================== */
 
