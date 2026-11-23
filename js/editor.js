@@ -10,6 +10,34 @@ function esc(s) {
 var DIRS = { DEFINE: 1, OBJECTS: 1, OBJECT: 1, MISSIONS: 1, MISSION: 1, AT: 1,
   GLOBAL_SPACE: 1, VAR_INT: 1, VAR_FLOAT: 1, HEX: 1, END: 1 };
 
+// Symbol-name display state (set by the app; highlight() stays a pure function
+// of the line plus these two module flags).
+var symNamesOn = true;
+var symOverrides = null; // off -> user name, or null
+
+function setSymNames(on) { symNamesOn = !!on; }
+function symNamesOnFlag() { return symNamesOn; }
+function setSymOverrides(o) { symOverrides = o || null; }
+
+function symEntry(off) {
+  if (typeof VC_SYM === "undefined" || !VC_SYM) return null;
+  return VC_SYM.entry(off);
+}
+function symDisplay(off, e) {
+  if (symOverrides && symOverrides[off] !== undefined) {
+    return { name: symOverrides[off], custom: true };
+  }
+  return { name: e.name, custom: false };
+}
+function symTitle(off, e, disp) {
+  var t = "$" + off + " \u00b7 " + (e.t === "F" ? "float" : "int") + " " + e.cat +
+    " \u00b7 " + e.w + "W " + e.r + "R";
+  if (e.x) t += " \u00b7 " + e.x;
+  if (disp.custom) t += " \u00b7 yours (auto: " + e.name + ")";
+  t += " \u00b7 click to rename";
+  return t;
+}
+
 // highlight one source line -> HTML
 function highlight(line) {
   // split trailing comment (quote-aware)
@@ -32,14 +60,56 @@ function highlight(line) {
   var re = /('(?:[^'\\]|\\.)*'?|:[A-Za-z0-9_]+|[0-9A-Fa-f]{4}:|[@#$]?[A-Za-z_][A-Za-z0-9_]*|\d+@|0[xX][0-9A-Fa-f]+|\d+\.\d*|\d*\.\d+|\d+|[(),]|\s+|.)/g;
   var m, first = true;
   var db = (typeof VC_DB !== "undefined") ? VC_DB : null;
+  var pendingDollar = false, prevEnd = -1;
+  function flushDollar() {
+    pendingDollar = false;
+    html += '<span class="t-gvar">$</span>';
+    first = false;
+  }
   while ((m = re.exec(code)) !== null) {
-    var t = m[0];
+    var t = m[0], adjacent = (m.index === prevEnd);
+    prevEnd = m.index + t.length;
+    // a lone "$" is held back: "$<digits>" becomes one symbol span,
+    // "$<name>" one named-variable span, anything else keeps old colors
+    if (pendingDollar) {
+      if (adjacent && /^\d+$/.test(t)) {
+        pendingDollar = false;
+        var off = parseInt(t, 10);
+        var e = symEntry(off);
+        if (e) {
+          var disp = symDisplay(off, e);
+          var shown = symNamesOn ? disp.name : "$" + off;
+          html += '<span class="gsym sc-' + e.cat + (disp.custom ? " custom" : "") +
+            '" data-sym="' + off + '" title="' + esc(symTitle(off, e, disp)) + '">' +
+            esc(shown) + "</span>";
+          first = false;
+          continue;
+        }
+        flushDollar();
+      } else if (adjacent && /^[@#$]?[A-Za-z_][A-Za-z0-9_]*$/.test(t) &&
+                 t.charAt(0) !== "@" && t.charAt(0) !== "#") {
+        pendingDollar = false;
+        html += '<span class="t-gvar" title="named global (VAR_INT / VAR_FLOAT)">' +
+          esc("$" + t) + "</span>";
+        first = false;
+        continue;
+      } else {
+        flushDollar();
+      }
+    }
+    if (t === "$") { pendingDollar = true; continue; }
     if (/^\s+$/.test(t) || t === "," || /^[()]$/.test(t)) { html += esc(t); continue; }
     var cls = "";
     if (first && t.charAt(0) === ":") cls = "t-labdef";
     else if (/^[0-9A-Fa-f]{4}:$/.test(t)) cls = "t-opnum";
     else if (t.charAt(0) === "'") cls = "t-str";
     else if (t.charAt(0) === "@") cls = "t-labref";
+    else if (t.charAt(0) === "$" && t.length > 1) {
+      html += '<span class="t-gvar" title="named global (VAR_INT / VAR_FLOAT)">' +
+        esc(t) + "</span>";
+      first = false;
+      continue;
+    }
     else if (t.charAt(0) === "$") cls = "t-gvar";
     else if (t.charAt(0) === "#") cls = "t-model";
     else if (/^\d+@$/.test(t) || t.toUpperCase() === "TIMERA" || t.toUpperCase() === "TIMERB") cls = "t-lvar";
@@ -50,6 +120,7 @@ function highlight(line) {
     html += cls ? '<span class="' + cls + '">' + esc(t) + "</span>" : esc(t);
     first = false;
   }
+  if (pendingDollar) flushDollar();
   if (com) html += '<span class="t-com">' + esc(com) + "</span>";
   return html || "&nbsp;";
 }
@@ -69,6 +140,17 @@ function closestRow(el) {
   return null;
 }
 function rowNum(row) { return +row.getAttribute("data-ln"); }
+// offset of a clicked symbol span (walks up to the row; old-browser safe)
+function symOff(el, stopAt) {
+  while (el && el.nodeType === 1 && el !== stopAt) {
+    if (el.getAttribute) {
+      var v = el.getAttribute("data-sym");
+      if (v !== null && v !== "") return +v;
+    }
+    el = el.parentNode;
+  }
+  return null;
+}
 
 function Editor(els, opts) {
   this.view = els.view;         // .codeview (scroll container)
@@ -92,7 +174,13 @@ function Editor(els, opts) {
   });
   this.rows.addEventListener("click", function (ev) {
     var row = closestRow(ev.target);
-    if (row && self.opts.onLineClick) self.opts.onLineClick(rowNum(row));
+    if (!row) return;
+    var off = ev.target ? symOff(ev.target, row) : null;
+    if (off !== null && self.opts.onSymbolClick) {
+      self.opts.onSymbolClick(off);
+      return;
+    }
+    if (self.opts.onLineClick) self.opts.onLineClick(rowNum(row));
   });
   this.ta.addEventListener("input", function () {
     if (self.opts.onEdit) self.opts.onEdit();
@@ -225,6 +313,8 @@ function searchAll(sections, query, max) {
   return out;
 }
 
-return { Editor: Editor, highlight: highlight, searchAll: searchAll };
+return { Editor: Editor, highlight: highlight, searchAll: searchAll,
+  setSymNames: setSymNames, symNamesOn: symNamesOnFlag,
+  setSymOverrides: setSymOverrides };
 
 })();

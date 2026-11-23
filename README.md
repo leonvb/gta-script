@@ -25,6 +25,11 @@ python3 -m http.server 8080
   padding); enforces engine budgets (225,512-byte main block, 35,000-byte missions).
 - **Code view** — virtualized, syntax-highlighted listing that stays fast at 175k lines;
   in-place editing, global search, click-an-error-to-jump problem list.
+- **Symbol names** — all 8,480 globals get friendly names (`player_char`,
+  `mission_flag`, `main_tick_ms`) instead of raw `$offsets`: color-coded by kind
+  (constant, handle, flag, coordinate, …), hover for read/write stats, click to
+  rename. Your names stay in the browser (exportable JSON); editing and
+  assembling still use `$offsets`.
 - **Structure view** — file layout, engine budget bars, global-variable census, clickable
   mission table, level-model list.
 - **Opcodes view** — searchable 1,424-command database with per-argument types, enums and
@@ -35,8 +40,8 @@ python3 -m http.server 8080
 ## Tests
 
 ```sh
-node test/run_tests.js   # engine: header/disassemble/round-trip/units — 65 tests
-node test/smoke_ui.js    # headless UI: drives the real app against main.scm — 36 tests
+node test/run_tests.js   # engine + symbols — 117 tests
+node test/smoke_ui.js    # headless UI: drives the real app against main.scm — 67 tests
 ```
 
 ## Layout
@@ -48,8 +53,10 @@ node test/smoke_ui.js    # headless UI: drives the real app against main.scm —
 | `js/opcodes.js` | generated opcode database (do not edit) |
 | `js/scm.js` | DOM-free engine: header/disassembler/assembler/reference API |
 | `js/editor.js` | syntax highlighting + virtualized code component |
+| `js/symbols.js` | generated global symbol table (do not edit) |
 | `js/app.js` | browser wiring: views, assembly flow, problems, downloads |
 | `tools/build_db.py` | regenerates `js/opcodes.js` from `tools/ref/` |
+| `tools/build_symbols.js` | regenerates `js/symbols.js` from `main.scm` |
 | `tools/ref/` | database inputs (gta3sc gtavc XMLs + licence) |
 | `test/` | engine tests + headless UI smoke test |
 | `main.scm` | retail Vice City PC script (bundled test target) |

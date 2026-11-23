@@ -281,5 +281,67 @@ eq(SCM.commandList().length, 1424, "command count");
   eq(d.args[0].type, "T", "03A4 arg0 TEXT_LABEL");
 }
 
+console.log("== symbols ==");
+const VC_SYM = require("../js/symbols.js");
+{
+  eq(VC_SYM.META.globals, 8480, "symbol globals");
+  eq(VC_SYM.META.insns, 153058, "symbol insns");
+  eq(VC_SYM.META.triples, 483, "symbol triples");
+  eq(VC_SYM.META.fileSize, 1269133, "symbol fileSize");
+  // fnv must match a fresh hash of main.scm
+  let h = 0x811C9DC5;
+  for (let i = 0; i < orig.length; i++) { h ^= orig[i]; h = Math.imul(h, 0x01000193); }
+  eq(VC_SYM.META.fnv, ("0000000" + (h >>> 0).toString(16)).slice(-8), "symbol fnv");
+  const spot = [
+    [8, 1, 6040, "handle", "player"],
+    [12, 8, 635, "var", "player_char"],
+    [92, 1, 85, "const", "main_tick_ms"],
+    [380, 73, 220, "coord", "scratch_pos_x"],
+    [496, 1309, 1214, "var", "cutscene_time"],
+    [500, 67, 70, "handle", "cutscene_object"],
+    [1252, 232, 174, "flag", "mission_flag"],
+    [26912, 0, 1, "uninit", "uninit_26912"],
+  ];
+  for (const [off, w, r, cat, name] of spot) {
+    const e = VC_SYM.entry(off);
+    ok(!!e, "entry $" + off);
+    if (e) {
+      eq(e.w, w, "$" + off + " writes");
+      eq(e.r, r, "$" + off + " reads");
+      eq(e.cat, cat, "$" + off + " cat");
+      eq(e.name, name, "$" + off + " name");
+    }
+  }
+  eq(VC_SYM.entry(99999), null, "unknown offset -> null");
+  // every name: valid identifier, unique, no opcode/reserved collision
+  const seen = new Set();
+  const reserved = ["DEFINE", "OBJECTS", "OBJECT", "MISSIONS", "MISSION", "AT",
+    "GLOBAL_SPACE", "VAR_INT", "VAR_FLOAT", "HEX", "END", "NOT", "TIMERA", "TIMERB"];
+  let bad = 0;
+  for (const k of Object.keys(VC_SYM.G)) {
+    const n = VC_SYM.G[k][4];
+    const up = n.toUpperCase();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(n) || n.length > 40) { bad++; console.log("  BADNAME", k, n); }
+    if (seen.has(up)) { bad++; console.log("  DUP", k, n); }
+    seen.add(up);
+    if (global.VC_DB.byName[up] !== undefined) { bad++; console.log("  OPCOLLIDE", k, n); }
+    if (reserved.indexOf(up) >= 0) { bad++; console.log("  DIRCIDE", k, n); }
+  }
+  eq(bad, 0, "name validity/uniqueness (" + seen.size + " names)");
+  eq(VC_SYM.find("player_char", 10).length >= 1, true, "find() hits");
+  eq(VC_SYM.find("player_char", 10)[0].off, 12, "find() offset");
+  ok(VC_SYM.T.indexOf(380) >= 0, "triple base 380 listed");
+}
+
+console.log("== symbols: generator determinism & freshness ==");
+{
+  const builder = require("../tools/build_symbols.js");
+  const a = builder.emit(builder.build());
+  const b = builder.emit(builder.build());
+  eq(a, b, "two builds are byte-identical");
+  const committed = fs.readFileSync(path.join(ROOT, "js", "symbols.js"), "utf8");
+  eq(a, committed, "committed js/symbols.js matches a fresh build");
+}
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);
