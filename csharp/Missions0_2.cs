@@ -15,6 +15,8 @@
 // - Control flow is structured: wait loops become while, skips become if,
 //   stacked same-target checks merge into && chains. The cutscene phase
 //   is one method call; skipping returns from it. GOSUB becomes a call.
+// - The "wait until cutscene time N" loops fold into WaitForCutsceneTime();
+//   the skippable form reports whether the player skipped the cutscene.
 // - This file is never executed as C# (methods throw); it is the input
 //   a flavour compiler would lower back to SCM assembly/bytecode.
 using System;
@@ -3436,275 +3438,65 @@ namespace VcFlavour
             Scm.SwitchStreaming(true);
             Scm.StartCutscene();
             Globals.cutscene_time = Scm.GetCutsceneTime();
-            while (1246 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(1246)) return;
             Scm.PrintNow("INT1_A", 10000, 1);
-            while (2708 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(2708)) return;
             Scm.PrintNow("INT1_B", 10000, 1);
-            while (4796 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(4796)) return;
             Scm.PrintNow("INT1_C", 10000, 1);
-            while (7086 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(7086)) return;
             Scm.PrintNow("INT1_D", 10000, 1);
-            while (8404 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(8404)) return;
             Scm.PrintNow("INT1_E", 10000, 1);
-            while (10756 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(10756)) return;
             Scm.PrintNow("INT1_F", 10000, 1);
-            while (12614 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(12614)) return;
             Scm.PrintNow("INT1_G", 10000, 1);
-            while (14813 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(14813)) return;
             Scm.PrintNow("INT1_H", 10000, 1);
-            while (18741 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(18741)) return;
             Scm.PrintNow("INT1_I", 10000, 1);
-            while (21294 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(21294)) return;
             Scm.PrintNow("INT1_J", 10000, 1);
-            while (24399 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(24399)) return;
             Scm.PrintNow("INT1_K", 10000, 1);
-            while (26496 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(26496)) return;
             Scm.PrintNow("INT1_L", 10000, 1);
-            while (31264 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(31264)) return;
             Scm.PrintNow("INT1_M", 10000, 1);
-            while (32904 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(32904)) return;
             Scm.PrintNow("INT1_N", 10000, 1);
-            while (35200 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(35200)) return;
             Scm.PrintNow("INT1_O", 10000, 1);
-            while (36522 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(36522)) return;
             Scm.PrintNow("INT1_P", 10000, 1);
-            while (41196 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(41196)) return;
             Scm.PrintNow("INT1_Q", 10000, 1);
-            while (45232 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(45232)) return;
             Scm.PrintNow("INT1_R", 10000, 1);
-            while (48992 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(48992)) return;
             Scm.PrintNow("INT1_S", 10000, 1);
-            while (50206 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(50206)) return;
             Scm.PrintNow("INT1_T", 10000, 1);
-            while (52509 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(52509)) return;
             Scm.PrintNow("INT1_U", 10000, 1);
-            while (54340 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(54340)) return;
             Scm.PrintNow("INT1_V", 10000, 1);
-            while (56291 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(56291)) return;
             Scm.PrintNow("INT1_W", 10000, 1);
-            while (57900 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(57900)) return;
             Scm.PrintNow("INT1_X", 10000, 1);
-            while (61168 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(61168)) return;
             Scm.PrintNow("INT1_Y", 10000, 1);
-            while (62518 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(62518)) return;
             Scm.PrintNow("INT1_Z", 10000, 1);
-            while (64169 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(64169)) return;
             Scm.PrintNow("INT1_A1", 10000, 1);
-            while (65706 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(65706)) return;
             Scm.PrintNow("INT1_A2", 10000, 1);
-            while (66784 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(66784)) return;
             Scm.ClearPrints();
-            while (68240 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(68240)) return;
             Scm.ClearPrints();
             Scm.SetFadingColour(1, 1, 1);
             Scm.DoFade(2000, Fade.Out);
@@ -3790,121 +3582,30 @@ namespace VcFlavour
             Scm.SwitchStreaming(true);
             Scm.StartCutscene();
             Globals.cutscene_time = Scm.GetCutsceneTime();
-            while (4860 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(4860)) return;
             Scm.PrintNow("INT2_A", 10000, 1);
-            while (6400 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(6400)) return;
             Scm.SetNearClip(0.15000000596046448f);
-            while (9600 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(9600)) return;
             Scm.PrintNow("INT2_B", 10000, 1);
-            while (12342 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(12342)) return;
             Scm.PrintNow("INT2_C", 10000, 1);
-            while (15840 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(15840)) return;
             Scm.PrintNow("INT2_D", 10000, 1);
-            while (17556 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(17556)) return;
             Scm.PrintNow("INT2_E", 10000, 1);
-            while (20640 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(20640)) return;
             Scm.PrintNow("INT2_F", 10000, 1);
-            while (23018 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(23018)) return;
             Scm.PrintNow("INT2_G", 10000, 1);
-            while (25863 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(25863)) return;
             Scm.PrintNow("INT2_H", 10000, 1);
-            while (26000 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
-            while (27624 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(26000)) return;
+            if (WaitForCutsceneTime(27624)) return;
             Scm.PrintNow("INT2_I", 10000, 1);
-            while (29348 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(29348)) return;
             Scm.PrintNow("INT2_J", 10000, 1);
-            while (30300 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(30300)) return;
             Scm.ClearPrints();
             Scm.SetFadingColour(1, 1, 1);
             Scm.DoFade(2000, Fade.Out);
@@ -4011,531 +3712,184 @@ namespace VcFlavour
             Scm.SwitchStreaming(true);
             Scm.StartCutscene();
             Globals.cutscene_time = Scm.GetCutsceneTime();
-            while (6500 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(6500)) return;
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (8743 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(8743, dust: 8)) return;
             Scm.PrintNow("INT3_A", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (10784 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(10784, dust: 8)) return;
             Scm.PrintNow("INT3_B", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (12040 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(12040, dust: 8)) return;
             Scm.PrintNow("INT3_C", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (14488 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(14488, dust: 8)) return;
             Scm.PrintNow("INT3_D", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (17072 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(17072, dust: 4)) return;
             Scm.ClearThisPrint("INT3_D");
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (20384 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(20384, dust: 4)) return;
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (23200 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(23200, dust: 4)) return;
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (35596 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(35596, dust: 4)) return;
             Scm.PrintNow("INT3_G", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (36430 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(36430, dust: 4)) return;
             Scm.PrintNow("INT3_H", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (39824 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(39824, dust: 4)) return;
             Scm.PrintNow("INT3_M", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (40896 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(40896, dust: 4)) return;
             Scm.PrintNow("INT3_I", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (42518 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(42518, dust: 4)) return;
             Scm.PrintNow("INT3_J", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (46872 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(46872, dust: 4)) return;
             Scm.PrintNow("INT3_K", 10000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51100 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(51100)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51233 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51233, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51366 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51366, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51500 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51500, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
                 Scm.AddBigGunFlash(-696.52197265625f, -1577.4320068359375f, 12.826000213623047f, -696.4920043945312f, -1577.35400390625f, 12.8149995803833f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51633 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51633, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51733 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51733, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-696.4420166015625f, -1577.3580322265625f, 12.765000343322754f, -696.4019775390625f, -1577.2860107421875f, 12.74899959564209f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51766 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51766, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51900 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51900, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (51966 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(51966, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-696.447998046875f, -1577.2740478515625f, 12.666000366210938f, -696.405029296875f, -1577.2060546875f, 12.642999649047852f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (52033 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(52033, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
                 Scm.AddBigGunFlash(-696.35400390625f, -1578.1219482421875f, 13.0600004196167f, -695.8359985351562f, -1577.301025390625f, 13.020000457763672f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            while (52166 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            }
+            if (WaitForCutsceneTime(52166, dust: 4)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
-            while (52200 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
-            }
+            if (WaitForCutsceneTime(52200, dust: 6)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-696.43701171875f, -1577.2349853515625f, 12.657999992370605f, -696.3909912109375f, -1577.1700439453125f, 12.635000228881836f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
-            while (52256 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52256, dust: 8)) return;
             Scm.PrintNow("INT3_N", 2000, 1);
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52300 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52300, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52433 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52433, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
                 Scm.AddBigGunFlash(-696.4390258789062f, -1577.2220458984375f, 12.652999877929688f, -696.3909912109375f, -1577.157958984375f, 12.630000114440918f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52566 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52566, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52666 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52666, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-696.4650268554688f, -1577.18896484375f, 12.64799976348877f, -696.4190063476562f, -1577.2130126953125f, 12.625f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52700 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52700, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52833 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52833, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52900 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52900, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-696.5759887695312f, -1577.1109619140625f, 12.685999870300293f, -696.5380249023438f, -1577.0400390625f, 12.666999816894531f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (52966 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(52966, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (53100 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(53100, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (53133 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(53133, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-696.6920166015625f, -1577.050048828125f, 12.70300006866455f, -696.6649780273438f, -1576.9730224609375f, 12.685999870300293f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (53233 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(53233, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (53366 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(53366, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
                 Scm.AddBigGunFlash(-696.35400390625f, -1578.1219482421875f, 13.0600004196167f, -695.8359985351562f, -1577.301025390625f, 13.020000457763672f);
                 Scm.AddBigGunFlash(-696.781005859375f, -1576.8990478515625f, 12.687999725341797f, -696.676025390625f, -1576.91796875f, 12.670000076293945f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (53500 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
+            if (WaitForCutsceneTime(53500, dust: 8)) return;
             if (!Scm.WasCutsceneSkipped()) {
                 Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
             }
             Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            while (57000 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            }
-            while (58736 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(57000, dust: 8)) return;
+            if (WaitForCutsceneTime(58736)) return;
             Scm.PrintNow("INT3_L", 10000, 1);
-            while (60800 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(60800)) return;
             Scm.ClearPrints();
-            while (63212 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-                UpdateSkipState();
-                if (Globals.state_shared_01 == 2) {
-                    return;
-                }
-            }
+            if (WaitForCutsceneTime(63212)) return;
             Scm.SetFadingColour(1, 1, 1);
             Scm.DoFade(2000, Fade.Out);
             while (Scm.GetFadingStatus()) {
@@ -4563,6 +3917,26 @@ namespace VcFlavour
             Scm.MarkModelAsNoLongerNeeded(Model.DOC_CRANE_CAB04);
             Scm.MarkModelAsNoLongerNeeded(Model.DOCKFUEL07);
             Scm.Wait(0);
+        }
+
+        // Waits until the cutscene clock reaches the given millisecond mark,
+        // polling the skip buttons every frame. Returns true when the player
+        // skipped the cutscene, in which case the caller must return.
+        // When dust is nonzero, also puffs helicopter dust each frame.
+        private static bool WaitForCutsceneTime(int ms, int dust = 0)
+        {
+            while (Globals.cutscene_time < ms) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return true;
+                }
+                if (dust != 0) {
+                    Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, dust);
+                }
+            }
+            return false;
         }
 
         // Subroutine @L_386B: polled every frame while a cutscene runs.
@@ -4628,120 +4002,51 @@ namespace VcFlavour
             Scm.SwitchStreaming(true);
             Scm.StartCutscene();
             Globals.cutscene_time = Scm.GetCutsceneTime();
-            while (6133 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(6133);
             Scm.PrintNow("INTB_B", 10000, 1);
-            while (7184 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(7184);
             Scm.PrintNow("INTB_A", 10000, 1);
-            while (13174 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(13174);
             Scm.PrintNow("INTB_C", 10000, 1);
-            while (15932 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(15932);
             Scm.PrintNow("INTB_D", 10000, 1);
-            while (19096 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(19096);
             Scm.PrintNow("INTB_E", 10000, 1);
-            while (20800 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(20800);
             Scm.PrintNow("INTB_F", 10000, 1);
-            while (23076 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(23076);
             Scm.PrintNow("INTB_G", 10000, 1);
-            while (25352 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(25352);
             Scm.PrintNow("INTB_H", 10000, 1);
-            while (29045 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(29045);
             Scm.PrintNow("INTB_I", 10000, 1);
-            while (32884 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(32884);
             Scm.PrintNow("INTB_J", 10000, 1);
-            while (36816 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(36816);
             Scm.PrintNow("INTB_K", 10000, 1);
-            while (39960 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(39960);
             Scm.PrintNow("INTB_L", 10000, 1);
-            while (46333 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(46333);
             Scm.PrintNow("INTB_M", 10000, 1);
-            while (49904 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(49904);
             Scm.PrintNow("INTB_N", 10000, 1);
-            while (51480 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(51480);
             Scm.PrintNow("INTB_O", 10000, 1);
-            while (54960 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(54960);
             Scm.PrintNow("INTB_P", 10000, 1);
-            while (56800 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(56800);
             Scm.PrintNow("INTB_Q", 10000, 1);
-            while (61668 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(61668);
             Scm.PrintNow("INTB_R", 10000, 1);
-            while (64584 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(64584);
             Scm.PrintNow("INTB_S", 10000, 1);
-            while (69612 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(69612);
             Scm.PrintNow("INTB_T", 10000, 1);
-            while (72104 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(72104);
             Scm.PrintNow("INTB_U", 10000, 1);
-            while (75104 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(75104);
             Scm.ClearPrints();
-            while (77104 > Globals.cutscene_time) {
-                Scm.Wait(0);
-                Globals.cutscene_time = Scm.GetCutsceneTime();
-            }
+            WaitForCutsceneTime(77104);
             Scm.DoFade(1500, Fade.Out);
             Scm.ClearPrints();
             while (Scm.GetFadingStatus()) {
@@ -4781,6 +4086,15 @@ namespace VcFlavour
             Scm.MissionHasFinished();
             Scm.TerminateThisScript();
             return;
+        }
+
+        // Waits until the cutscene clock reaches the given millisecond mark.
+        private static void WaitForCutsceneTime(int ms)
+        {
+            while (Globals.cutscene_time < ms) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
         }
     }
 }

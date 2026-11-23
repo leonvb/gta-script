@@ -656,6 +656,94 @@ function stripLabels(units) {
   });
   strip(units);
 }
+function countTree(u) {
+  let n = u.hn || u.n || 0;
+  for (const sub of subBodies(u)) for (const v of sub) n += countTree(v);
+  return n;
+}
+// Matches the "wait until cutscene time N" idiom so call sites can fold into
+// a WaitForCutsceneTime() helper:
+//
+//   while (N > <timeVar>) {
+//     Wait(0); <timeVar> = GetCutsceneTime();
+//     [gosub skip; if (<skipTest>) return;]  // skippable form (M1)
+//     [dust effect]                           // heli scenes: density varies
+//   }
+//
+// M2's cutscene is not skippable: no gosub/if tail (void form). Everything in
+// the returned spec is derived from the matched units; nothing is hardcoded.
+function matchCutsceneWait(M, u) {
+  if (u.kind !== 'while' || (u.labels || []).length) return null;
+  if (u.parts.length !== 1) return null;
+  const m = u.parts[0].text.match(/^(\d+) > (Globals\.\w+)$/);
+  if (!m) return null;
+  const body = u.body.filter(v => v.kind !== 'empty');
+  if (body.length < 2 || body.length > 5) return null;
+  if (body.some(v => (v.labels || []).length)) return null;
+  if (body.some(v => v.kind !== 'simple' && v.kind !== 'ifblock')) return null;
+  const [waitU, refreshU, ...rest] = body;
+  if (waitU.kind !== 'simple' || waitU.ins.op !== '0001' || waitU.ins.args[0] !== '0') return null;
+  if (refreshU.kind !== 'simple' || refreshU.ins.op !== '02E8' || refreshU.ins.args.length !== 1) return null;
+  if (renderTarget(M, refreshU.ins.args[0], M.cls) !== m[2]) return null;
+  const spec = {
+    ms: m[1], timeVar: m[2],
+    waitLine: emitSimple(M, waitU.ins, M.cls),
+    refreshLine: emitSimple(M, refreshU.ins, M.cls),
+  };
+  if (rest.length === 0) return spec; // void form
+  const [gosubU, ifU, dustU] = rest;
+  if (!gosubU || gosubU.kind !== 'simple' || gosubU.ins.op !== '0050') return null;
+  if (!ifU || ifU.kind !== 'ifblock' || ifU.neg || ifU.els) return null;
+  if (ifU.then.length !== 1 || ifU.then[0].kind !== 'ret' || (ifU.then[0].labels || []).length) return null;
+  spec.skipCall = emitSimple(M, gosubU.ins, M.cls);
+  spec.skipTest = testText(ifU.parts);
+  if (dustU) {
+    if (dustU.kind !== 'simple' || dustU.ins.op !== '0598' || dustU.ins.args.length !== 3) return null;
+    const dm = emitSimple(M, dustU.ins, M.cls).match(/^(.*), (\d+)\);$/);
+    if (!dm || dm[2] !== dustU.ins.args[2]) return null;
+    spec.dustObj = dustU.ins.args[0];
+    spec.dustPrefix = dm[1];
+    spec.dust = dm[2];
+  }
+  return spec;
+}
+// Finds every cutscene-wait loop in the Main/phase trees (never sub bodies:
+// there `return` means a real RETURN, not a skip escape). Folds only when one
+// helper can serve every site class-wide; otherwise leaves all loops alone.
+function scanCutsceneWaits(M, trees) {
+  const found = [];
+  const walk = (us) => us.forEach(u => {
+    if (u.kind === 'while') {
+      const sp = matchCutsceneWait(M, u);
+      if (sp) found.push([u, sp]);
+    }
+    subBodies(u).forEach(walk);
+  });
+  trees.forEach(walk);
+  if (!found.length) return null;
+  const keyOf = (sp) => JSON.stringify([sp.timeVar, sp.waitLine, sp.refreshLine, sp.skipCall || null, sp.skipTest || null]);
+  const key0 = keyOf(found[0][1]);
+  if (!found.every(([, sp]) => keyOf(sp) === key0)) return null;
+  const dusts = found.map(([, sp]) => sp).filter(sp => sp.dust);
+  if (dusts.length) {
+    const d0 = JSON.stringify([dusts[0].dustObj, dusts[0].dustPrefix]);
+    if (!dusts.every(sp => JSON.stringify([sp.dustObj, sp.dustPrefix]) === d0)) return null;
+  }
+  const first = found[0][1];
+  const helper = {
+    skippable: !!first.skipCall,
+    dust: dusts.length > 0,
+    timeVar: first.timeVar, waitLine: first.waitLine, refreshLine: first.refreshLine,
+    skipCall: first.skipCall, skipTest: first.skipTest,
+    dustPrefix: dusts.length ? dusts[0].dustPrefix : null,
+  };
+  for (const [u, sp] of found) {
+    u.cw = !helper.skippable ? `WaitForCutsceneTime(${sp.ms});`
+      : sp.dust ? `if (WaitForCutsceneTime(${sp.ms}, dust: ${sp.dust})) return;`
+      : `if (WaitForCutsceneTime(${sp.ms})) return;`;
+  }
+  return { helper, count: found.length };
+}
 function emitSimple(M, ins, ctx) {
   const id = parseInt(ins.op, 16);
   const arith = (id >= 8 && id <= 23) || (id >= 88 && id <= 119);
@@ -715,6 +803,7 @@ function emitUnits(M, units, ind, out, stats) {
       case 'goto': out.push(`${ind}goto ${u.target}; // UNSTRUCTURED`); stats.insns += u.n; stats.surviving++; break;
       case 'if': out.push(`${ind}if (${negGuard(u.parts)}) goto ${u.target}; // UNSTRUCTURED`); stats.insns += u.n; stats.surviving++; break;
       case 'while':
+        if (u.cw) { out.push(`${ind}${u.cw}`); stats.insns += countTree(u); break; }
         out.push(`${ind}while (${testText(u.parts)}) {`);
         emitUnits(M, u.body, ind + '    ', out, stats);
         out.push(`${ind}}`);
@@ -748,7 +837,7 @@ function emitUnits(M, units, ind, out, stats) {
 function emitMission(M) {
   const L = [];
   const stats = { insns: 0, ifs: 0, labels: 0, surviving: 0 };
-  const st = { whiles: 0, ifs: 0, elses: 0, breaks: 0, bares: 0, merged: 0, escapes: 0 };
+  const st = { whiles: 0, ifs: 0, elses: 0, breaks: 0, bares: 0, merged: 0, escapes: 0, cutsceneWaits: 0 };
   const idxOf = {};
   M.lines.forEach((ln, i) => { if (isLabel(ln)) idxOf[labelName(ln)] = i; });
   const subLabels = new Set(M.gosubs);
@@ -788,7 +877,10 @@ function emitMission(M) {
     L.push(`            ${t.cs} ${lvarName(lv)} = default; // ${lv}`);
   }
   if (lvs.length) L.push('');
-  const out = [];
+  // Build every Main/phase tree up front: the cutscene-wait scan needs all
+  // sites before it may fold any of them (one helper serves the whole class).
+  const mainTrees = [];
+  let phaseUnits = null;
   if (M.phase) {
     const pTop = idxOf[M.phase.from], pEnd = idxOf[M.phase.to] - 1;
     for (let i = pTop; i <= pEnd; i++) {
@@ -798,16 +890,25 @@ function emitMission(M) {
     for (const u of outer) {
       if ((u.kind === 'goto' || u.kind === 'if') && u.target === M.phase.to) throw new Error(`escape target referenced outside phase (${M.cls})`);
     }
-    emitUnits(M, build(entryIdx + 1, pTop - 1), '            ', out, stats);
-    out.push(`            ${M.phase.method}();`);
-    emitUnits(M, build(idxOf[M.phase.to], mainEnd), '            ', out, stats);
+    mainTrees.push(build(entryIdx + 1, pTop - 1));
+    mainTrees.push(build(idxOf[M.phase.to], mainEnd));
+    phaseUnits = build(pTop, pEnd, M.phase.to);
   } else {
-    emitUnits(M, build(entryIdx + 1, mainEnd), '            ', out, stats);
+    mainTrees.push(build(entryIdx + 1, mainEnd));
+  }
+  const cw = scanCutsceneWaits(M, M.phase ? mainTrees.concat([phaseUnits]) : mainTrees);
+  if (cw) st.cutsceneWaits = cw.count;
+  const out = [];
+  if (M.phase) {
+    emitUnits(M, mainTrees[0], '            ', out, stats);
+    out.push(`            ${M.phase.method}();`);
+    emitUnits(M, mainTrees[1], '            ', out, stats);
+  } else {
+    emitUnits(M, mainTrees[0], '            ', out, stats);
   }
   L.push(...out);
   L.push('        }');
   if (M.phase) {
-    const pTop = idxOf[M.phase.from], pEnd = idxOf[M.phase.to] - 1;
     L.push('');
     L.push('        // The opening cutscenes. Every wait loop polls UpdateSkipState();');
     L.push('        // if the player skips, control returns to Main, which resumes at');
@@ -815,8 +916,40 @@ function emitMission(M) {
     L.push(`        private static void ${M.phase.method}()`);
     L.push('        {');
     const pb = [];
-    emitUnits(M, build(pTop, pEnd, M.phase.to), '            ', pb, stats);
+    emitUnits(M, phaseUnits, '            ', pb, stats);
     L.push(...pb);
+    L.push('        }');
+  }
+  if (cw) {
+    const h = cw.helper;
+    L.push('');
+    if (h.skippable) {
+      L.push('        // Waits until the cutscene clock reaches the given millisecond mark,');
+      L.push('        // polling the skip buttons every frame. Returns true when the player');
+      L.push('        // skipped the cutscene, in which case the caller must return.');
+      if (h.dust) L.push('        // When dust is nonzero, also puffs helicopter dust each frame.');
+      L.push(`        private static bool WaitForCutsceneTime(int ms${h.dust ? ', int dust = 0' : ''})`);
+    } else {
+      L.push('        // Waits until the cutscene clock reaches the given millisecond mark.');
+      L.push('        private static void WaitForCutsceneTime(int ms)');
+    }
+    L.push('        {');
+    L.push(`            while (${h.timeVar} < ms) {`);
+    L.push(`                ${h.waitLine}`);
+    L.push(`                ${h.refreshLine}`);
+    if (h.skippable) {
+      L.push(`                ${h.skipCall}`);
+      L.push(`                if (${h.skipTest}) {`);
+      L.push('                    return true;');
+      L.push('                }');
+      if (h.dust) {
+        L.push('                if (dust != 0) {');
+        L.push(`                    ${h.dustPrefix}, dust);`);
+        L.push('                }');
+      }
+    }
+    L.push('            }');
+    if (h.skippable) L.push('            return false;');
     L.push('        }');
   }
   for (const s of subLabels) {
@@ -918,6 +1051,8 @@ out.push('// - Models are Model.ADMIRAL etc.; text labels are plain strings.');
 out.push('// - Control flow is structured: wait loops become while, skips become if,');
 out.push('//   stacked same-target checks merge into && chains. The cutscene phase');
 out.push('//   is one method call; skipping returns from it. GOSUB becomes a call.');
+out.push('// - The "wait until cutscene time N" loops fold into WaitForCutsceneTime();');
+out.push('//   the skippable form reports whether the player skipped the cutscene.');
 out.push('// - This file is never executed as C# (methods throw); it is the input');
 out.push('//   a flavour compiler would lower back to SCM assembly/bytecode.');
 out.push('using System;');
@@ -1004,7 +1139,7 @@ for (const off of allG) {
 out.push('    }');
 // missions
 let totalInsns = 0, totalSurv = 0;
-const agg = { whiles: 0, ifs: 0, elses: 0, breaks: 0, bares: 0, merged: 0, escapes: 0, labelsKept: 0 };
+const agg = { whiles: 0, ifs: 0, elses: 0, breaks: 0, bares: 0, merged: 0, escapes: 0, cutsceneWaits: 0, labelsKept: 0 };
 for (const M of MISSIONS) {
   const { code, stats } = emitMission(M);
   out.push(code);
@@ -1017,7 +1152,7 @@ fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, out.join('\n'));
 console.log('wrote', OUT);
 console.log(`globals=${allG.length} models=${needModels.size} enums=${needEnums.size} structs=${needStructs.size}`);
-console.log(`insns=${totalInsns} whiles=${agg.whiles} ifs=${agg.ifs} elses=${agg.elses} breaks=${agg.breaks} bares=${agg.bares} merged=${agg.merged} escapes=${agg.escapes} labelsKept=${agg.labelsKept} SURVIVING=${totalSurv}`);
+console.log(`insns=${totalInsns} whiles=${agg.whiles} ifs=${agg.ifs} elses=${agg.elses} breaks=${agg.breaks} bares=${agg.bares} merged=${agg.merged} escapes=${agg.escapes} cutsceneWaits=${agg.cutsceneWaits} labelsKept=${agg.labelsKept} SURVIVING=${totalSurv}`);
 const expect = MISSIONS.reduce((s, M) => s + M.lines.filter(l => parseInsn(l)).length, 0);
 console.log(`source insns=${expect} ${expect === totalInsns ? 'MATCH' : 'MISMATCH!'}`);
 if (warnings.length) {
