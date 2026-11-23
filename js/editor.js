@@ -159,6 +159,13 @@ Editor.prototype.gotoLine = function (n, flash) {
     }
     // scroll textarea to line
     var lh = 19;
+    try {
+      if (typeof window !== "undefined" && window.getComputedStyle) {
+        var cs = window.getComputedStyle(self.ta, null);
+        var plh = parseInt((cs.getPropertyValue && cs.getPropertyValue("line-height")) || cs.lineHeight, 10);
+        if (plh > 0) lh = plh;
+      }
+    } catch (e) { /* keep default */ }
     this.ta.scrollTop = Math.max(0, (n - 1) * lh - this.ta.clientHeight / 2);
     this.gutter.scrollTop = this.ta.scrollTop;
     return;

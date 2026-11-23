@@ -319,3 +319,68 @@ kbd {
   .topgroup.right { margin-left: 0; }
   .oprow .onm { flex-basis: 200px; }
 }
+
+/* ---------- mobile ---------- */
+#btnNav { display: none; }
+#navBackdrop { display: none; }
+body { height: 100vh; height: 100dvh; } /* dvh tracks the mobile URL bar; old browsers keep 100% */
+nav.tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+nav.tabs button { flex: 0 0 auto; }
+.toolbar { flex-wrap: wrap; }
+.status { min-width: 0; }
+#searchInput { flex: 1 1 150px; min-width: 0; }
+#opSearch, #misFilter { min-width: 0; }
+.oprow .onm, .oprow .osig { min-width: 0; }
+
+/* touch devices: bigger targets, no iOS focus zoom in the editor */
+@media (pointer: coarse) {
+  button, select, input[type="text"], input[type="number"] { min-height: 40px; }
+  nav.tabs button { min-height: 0; padding-top: 12px; padding-bottom: 10px; }
+  .secitem { padding-top: 9px; padding-bottom: 9px; }
+  .prob { padding-top: 8px; padding-bottom: 8px; }
+  .oprow { padding-top: 7px; padding-bottom: 7px; }
+  .editwrap textarea, .editgutter { font-size: 16px; line-height: 24px; }
+}
+
+@media (max-width: 900px) {
+  #topbar { flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
+  .brand { flex-direction: row; align-items: baseline; gap: 8px; }
+  .topgroup { flex-wrap: wrap; }
+  .topgroup button { padding: 6px 10px; font-size: 12px; }
+  .topgroup.right { margin-left: auto; }
+  .filebadge { order: 5; flex: 1 1 100%; max-width: none; margin: 0; text-align: center; }
+  nav.tabs { padding: 0 8px; }
+  nav.tabs button { padding-left: 13px; padding-right: 13px; }
+  .toolbar { padding: 8px 10px; gap: 8px; }
+  .scroll { padding: 12px; }
+  /* section list becomes a slide-in drawer */
+  #btnNav { display: inline-block; }
+  .codebody { position: relative; }
+  .secnav {
+    position: absolute; top: 0; bottom: 0; left: 0; z-index: 40;
+    width: 300px; max-width: 84vw; flex-basis: auto;
+    -webkit-transform: translateX(-103%); transform: translateX(-103%);
+    -webkit-transition: -webkit-transform 0.2s ease; transition: transform 0.2s ease;
+  }
+  body.nav-open .secnav {
+    -webkit-transform: none; transform: none;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.5);
+  }
+  body.nav-open #navBackdrop {
+    display: block; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 30;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  #statusbar { gap: 8px; padding: 5px 10px; font-size: 11px; overflow-x: auto; }
+  #statusbar .spacer, #statusbar .dim { display: none; }
+  #fileMeta, #asmState { flex: 0 0 auto; }
+}
+
+@media (max-width: 560px) {
+  .cards { grid-template-columns: 1fr; }
+  .oprow .osig { display: none; }
+  .oprow .onm { flex: 1 1 auto; }
+  .oprow .oid { flex-basis: 40px; }
+  #edStatus { flex: 1 1 100%; order: 5; }
+  .card { padding: 12px; }
+  .guide pre { padding: 10px; font-size: 11px; }
+}
