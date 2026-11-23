@@ -29,6 +29,79 @@ function toast(msg, ms) {
   t._tm = setTimeout(function () { t.classList.remove("on"); }, ms || 2600);
 }
 
+/* --------------------------- compat helpers --------------------------- */
+// The app targets old mobile browsers too: ES5 only, no dataset/closest/fetch.
+
+function showError(msg) {
+  var b = $("errBanner");
+  if (!b) { alert(msg); return; }
+  b.textContent = msg + " (tap to dismiss)";
+  b.classList.add("on");
+}
+
+function getData(el, key) {
+  if (el.dataset) return el.dataset[key];
+  return el.getAttribute("data-" + key);
+}
+
+// closest() replacement: tag name + optional required attribute
+function closestEl(el, tag, attr) {
+  tag = String(tag).toUpperCase();
+  while (el && el.nodeType === 1) {
+    if (el.tagName === tag && (attr === undefined || el.getAttribute(attr) !== null)) return el;
+    el = el.parentNode;
+  }
+  return null;
+}
+
+// classList.toggle(name, force) ignores `force` on old browsers
+function setActive(el, on) {
+  if (on) el.classList.add("active");
+  else el.classList.remove("active");
+}
+
+function fetchBytes(url, ok, bad) {
+  if (typeof window !== "undefined" && window.fetch) {
+    window.fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.arrayBuffer();
+    }).then(ok, bad);
+    return;
+  }
+  try {
+    var x = new XMLHttpRequest();
+    x.open("GET", url, true);
+    try { x.responseType = "arraybuffer"; } catch (e) { /* old XHR: response may be text */ }
+    x.onload = function () {
+      if ((x.status === 200 || x.status === 0) && x.response) ok(x.response);
+      else bad(new Error("HTTP " + x.status));
+    };
+    x.onerror = function () { bad(new Error("request failed")); };
+    x.send();
+  } catch (e) { bad(e); }
+}
+
+function encodeUtf8(str) {
+  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str);
+  var s = unescape(encodeURIComponent(str));
+  var u8 = new Uint8Array(s.length);
+  for (var i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i) & 255;
+  return u8;
+}
+
+// surface unexpected failures instead of dying silently
+if (typeof window !== "undefined") {
+  window.onerror = function (msg) { showError("Error: " + msg); };
+  if (window.addEventListener) {
+    window.addEventListener("error", function (ev) {
+      var t = ev && ev.target;
+      if (t && t.tagName === "SCRIPT") {
+        showError("Failed to load " + (t.src || "a script") + " -- check your connection and reload.");
+      }
+    }, true);
+  }
+}
+
 function secById(id) {
   for (var i = 0; i < S.sections.length; i++) {
     if (S.sections[i].id === id) return S.sections[i];
@@ -77,6 +150,16 @@ function escHtml(s) {
 /* ------------------------------- loading ------------------------------ */
 
 function loadBytes(name, u8) {
+  toast("Loading " + name + " ...");
+  // let the UI paint before the heavy disassemble freezes it on slow devices
+  setTimeout(function () {
+    try { loadBytesNow(name, u8); }
+    catch (e) { showError("Could not open " + name + ": " + ((e && e.message) || e)); }
+  }, 30);
+  return true;
+}
+
+function loadBytesNow(name, u8) {
   var hdr = SCM.parseHeader(u8);
   if (!hdr.ok) { toast("Not a valid SCM file: " + hdr.error, 4000); return false; }
   var dis = SCM.disassemble(u8);
@@ -150,18 +233,27 @@ function loadSourceFile(name, text) {
   toast("Loaded " + secs.length + " sections -- press Assemble to build.");
 }
 
-function openLocalFile(accept, cb) {
-  var inp = document.createElement("input");
-  inp.type = "file";
+// File picking through persistent, DOM-attached inputs: programmatic clicks on
+// detached inputs are ignored by iOS Safari and some WebViews.
+function pickFile(inputId, accept, binary, cb) {
+  var inp = $(inputId);
+  if (!inp || typeof FileReader === "undefined") {
+    showError("This browser cannot open local files. Try Chrome, Edge, Firefox or Safari.");
+    return;
+  }
   inp.accept = accept;
   inp.onchange = function () {
-    if (!inp.files || !inp.files.length) return;
+    if (!inp.files || !inp.files.length) { inp.value = ""; return; }
     var f = inp.files[0];
     var rd = new FileReader();
-    rd.onload = function () { cb(f.name, rd.result); };
-    if (accept === ".scm") rd.readAsArrayBuffer(f);
-    else rd.readAsText(f);
+    rd.onload = function () { inp.value = ""; cb(f.name, rd.result); };
+    rd.onerror = function () { inp.value = ""; toast("Could not read " + f.name + ".", 4000); };
+    try {
+      if (binary) rd.readAsArrayBuffer(f);
+      else rd.readAsText(f);
+    } catch (e) { inp.value = ""; toast("Could not read " + f.name + ".", 4000); }
   };
+  inp.value = "";
   inp.click();
 }
 
@@ -257,7 +349,7 @@ function runSearch() {
   var rows = box.querySelectorAll(".prob[data-i]");
   for (var i = 0; i < rows.length; i++) {
     rows[i].addEventListener("click", function () {
-      var r = box._res[+this.dataset.i];
+      var r = box._res[+getData(this, "i")];
       box.style.display = "none";
       showSection(r.sec, true);
       ed.gotoLine(r.line, true);
@@ -297,7 +389,7 @@ function doAssemble() {
   if (!S.sections.length) { toast("Nothing to assemble -- open a file first."); return false; }
   if (S.editing) applyEdit();
   rebuildSecSelect();
-  var t0 = performance.now();
+  var t0 = Date.now();
   var res;
   try {
     res = SCM.assemble(joinSource());
@@ -309,7 +401,7 @@ function doAssemble() {
     refreshBadge();
     return false;
   }
-  var ms = Math.round(performance.now() - t0);
+  var ms = Math.round(Date.now() - t0);
   S.problems = [];
   res.errors.forEach(function (e) { S.problems.push({ kind: "err", line: e.line, msg: e.msg }); });
   res.warnings.forEach(function (w) { S.problems.push({ kind: "warn", line: w.line, msg: w.msg }); });
@@ -347,7 +439,7 @@ function renderProblems() {
   var rows = box.querySelectorAll(".prob");
   for (var i = 0; i < rows.length; i++) {
     rows[i].addEventListener("click", function () {
-      var p = S.problems[+this.dataset.i];
+      var p = S.problems[+getData(this, "i")];
       if (!p.line) return;
       switchTab("editor");
       gotoGlobalLine(p.line);
@@ -356,13 +448,22 @@ function renderProblems() {
 }
 
 function download(name, u8) {
+  var U = (typeof window !== "undefined" && (window.URL || window.webkitURL)) || null;
+  if (typeof Blob === "undefined" || !U || !U.createObjectURL) {
+    toast("Download is not supported by this browser.", 4000);
+    return;
+  }
   var blob = new Blob([u8], { type: "application/octet-stream" });
   var a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = U.createObjectURL(blob);
   a.download = name;
   document.body.appendChild(a);
   a.click();
-  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  setTimeout(function () {
+    try { U.revokeObjectURL(a.href); } catch (e) { /* ignore */ }
+    if (a.remove) a.remove();
+    else if (a.parentNode) a.parentNode.removeChild(a);
+  }, 500);
 }
 
 /* ------------------------------ structure ----------------------------- */
@@ -454,7 +555,7 @@ function renderStructure() {
   for (var i = 0; i < rows.length; i++) {
     rows[i].addEventListener("click", function () {
       switchTab("editor");
-      showSection("mission:" + this.dataset.mis, true);
+      showSection("mission:" + getData(this, "mis"), true);
     });
   }
 }
@@ -490,7 +591,7 @@ function renderOpList(filter) {
   box.innerHTML = html;
   var rows = box.querySelectorAll(".oprow[data-id]");
   for (var r = 0; r < rows.length; r++) {
-    rows[r].addEventListener("click", function () { showOpDetail(+this.dataset.id); });
+    rows[r].addEventListener("click", function () { showOpDetail(+getData(this, "id")); });
   }
 }
 function opSignature(id) {
@@ -553,8 +654,9 @@ function insertOpTemplate() {
   var line = parts.join(" ");
   if (S.editing) {
     var ta = $("editArea");
-    ta.setRangeText(line, ta.selectionStart, ta.selectionEnd, "end");
-    ta.focus();
+    if (ta.setRangeText) ta.setRangeText(line, ta.selectionStart, ta.selectionEnd, "end");
+    else ta.value = ta.value + "\n" + line;
+    if (ta.focus) ta.focus();
     S.dirty[sec.id] = true;
   } else {
     if (S.editing) applyEdit();
@@ -640,10 +742,10 @@ function renderHexPage() {
 function switchTab(name) {
   var tabs = $("tabs").querySelectorAll("button[data-tab]");
   for (var i = 0; i < tabs.length; i++) {
-    tabs[i].classList.toggle("active", tabs[i].dataset.tab === name);
+    setActive(tabs[i], getData(tabs[i], "tab") === name);
   }
   ["editor", "struct", "opcodes", "hex", "guide"].forEach(function (t) {
-    $("tab-" + t).classList.toggle("active", t === name);
+    setActive($("tab-" + t), t === name);
   });
   if (name === "editor" && ed) ed.render();
 }
@@ -654,31 +756,29 @@ function wire() {
     textarea: $("editArea"), gutter: $("edGutter")
   });
   $("edMount").addEventListener("dblclick", function () { setEditing(true); });
+  $("errBanner").addEventListener("click", function () { this.classList.remove("on"); });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && S.editing) setEditing(false);
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    var k = e.key || (e.keyCode === 27 ? "Escape" : (e.keyCode === 83 ? "s" : ""));
+    if (k === "Escape" && S.editing) setEditing(false);
+    if ((e.ctrlKey || e.metaKey) && (k === "s" || k === "S")) {
       e.preventDefault();
       if ($("tab-editor").classList.contains("active")) doAssemble();
     }
   });
   $("tabs").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-tab]");
-    if (b) switchTab(b.dataset.tab);
+    var b = closestEl(e.target, "button", "data-tab");
+    if (b) switchTab(getData(b, "tab"));
   });
   $("btnOpen").addEventListener("click", function () {
-    openLocalFile(".scm", function (name, buf) { loadBytes(name, new Uint8Array(buf)); });
+    pickFile("fileScm", ".scm", true, function (name, buf) { loadBytes(name, new Uint8Array(buf)); });
   });
   $("btnOpenSrc").addEventListener("click", function () {
-    openLocalFile(".txt,.src", function (name, txt) { loadSourceFile(name, txt); });
+    pickFile("fileSrc", ".txt,.src", false, function (name, txt) { loadSourceFile(name, txt); });
   });
   $("btnSample").addEventListener("click", function () {
-    fetch("main.scm").then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.arrayBuffer();
-    }).then(function (buf) {
+    fetchBytes("main.scm", function (buf) {
       loadBytes("main.scm", new Uint8Array(buf));
-      toast("Loaded the bundled retail main.scm.");
-    }).catch(function () {
+    }, function () {
       toast("Could not fetch main.scm -- are you serving this folder over HTTP? " +
         "Use Open instead.", 4500);
     });
@@ -690,7 +790,7 @@ function wire() {
   $("btnDlSrc").addEventListener("click", function () {
     if (!S.sections.length) { toast("Nothing to save."); return; }
     if (S.editing) applyEdit();
-    var u8 = new TextEncoder().encode(joinSource());
+    var u8 = encodeUtf8(joinSource());
     download("main_src.txt", u8);
     toast("Source saved as main_src.txt.");
   });
@@ -703,8 +803,13 @@ function wire() {
   buildOpList();
 }
 
+function boot() {
+  try { wire(); }
+  catch (e) { showError("Startup failed: " + ((e && e.message) || e)); }
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", wire);
-} else wire();
+  document.addEventListener("DOMContentLoaded", boot);
+} else boot();
 
 })();

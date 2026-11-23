@@ -209,3 +209,10 @@ kbd {
 }
 #hexDump { padding-bottom: 24px; }
 #searchResults { border-bottom: 1px solid var(--border); }
+.filepick { position: fixed; left: -9999px; top: 0; width: 4px; height: 4px; opacity: 0; }
+#errBanner {
+  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: #4c1d1d; border-bottom: 1px solid var(--red); color: #fecaca;
+  font: 13px var(--mono); padding: 8px 14px; cursor: pointer;
+}
+#errBanner.on { display: block; }

@@ -56,6 +56,20 @@ function highlight(line) {
 
 var ROW_H = 19;
 
+// compat: rAF / closest / dataset fallbacks for old mobile browsers
+function raf(fn) {
+  if (typeof requestAnimationFrame !== "undefined") return requestAnimationFrame(fn);
+  return setTimeout(function () { fn(Date.now()); }, 16);
+}
+function closestRow(el) {
+  while (el && el.nodeType === 1) {
+    if ((" " + (el.className || "") + " ").indexOf(" coderow ") >= 0) return el;
+    el = el.parentNode;
+  }
+  return null;
+}
+function rowNum(row) { return +row.getAttribute("data-ln"); }
+
 function Editor(els, opts) {
   this.view = els.view;         // .codeview (scroll container)
   this.rows = els.rows;         // .coderows inner
@@ -70,15 +84,15 @@ function Editor(els, opts) {
   var self = this;
   this.view.addEventListener("scroll", function () {
     if (self.raf) return;
-    self.raf = requestAnimationFrame(function () { self.raf = 0; self.render(); });
+    self.raf = raf(function () { self.raf = 0; self.render(); });
   });
   this.rows.addEventListener("dblclick", function (ev) {
-    var row = ev.target && ev.target.closest ? ev.target.closest(".coderow") : null;
-    if (row && self.opts.onDblClick) self.opts.onDblClick(+row.dataset.ln);
+    var row = closestRow(ev.target);
+    if (row && self.opts.onDblClick) self.opts.onDblClick(rowNum(row));
   });
   this.rows.addEventListener("click", function (ev) {
-    var row = ev.target && ev.target.closest ? ev.target.closest(".coderow") : null;
-    if (row && self.opts.onLineClick) self.opts.onLineClick(+row.dataset.ln);
+    var row = closestRow(ev.target);
+    if (row && self.opts.onLineClick) self.opts.onLineClick(rowNum(row));
   });
   this.ta.addEventListener("input", function () {
     if (self.opts.onEdit) self.opts.onEdit();
@@ -87,17 +101,22 @@ function Editor(els, opts) {
     self.gutter.scrollTop = self.ta.scrollTop;
   });
   this.ta.addEventListener("keydown", function (ev) {
-    if (ev.key === "Tab") {
+    var k = ev.key || (ev.keyCode === 9 ? "Tab" : ev.keyCode === 27 ? "Escape" :
+      ev.keyCode === 83 ? "s" : "");
+    if (k === "Tab") {
       ev.preventDefault();
-      var s = self.ta.selectionStart;
-      self.ta.setRangeText("  ", s, self.ta.selectionEnd, "end");
+      if (self.ta.setRangeText) {
+        self.ta.setRangeText("  ", self.ta.selectionStart, self.ta.selectionEnd, "end");
+      } else {
+        self.ta.value = self.ta.value + "  ";
+      }
       if (self.opts.onEdit) self.opts.onEdit();
     }
-    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s") {
+    if ((ev.ctrlKey || ev.metaKey) && (k === "s" || k === "S")) {
       ev.preventDefault();
       if (self.opts.onSave) self.opts.onSave();
     }
-    if (ev.key === "Escape" && self.opts.onEscape) self.opts.onEscape();
+    if (k === "Escape" && self.opts.onEscape) self.opts.onEscape();
   });
 }
 
@@ -134,8 +153,10 @@ Editor.prototype.gotoLine = function (n, flash) {
   if (this.mode === "edit") {
     var pos = 0;
     for (var i = 0; i < n - 1; i++) pos += this.lines[i].length + 1;
-    this.ta.focus();
-    this.ta.setSelectionRange(pos, pos + this.lines[n - 1].length);
+    if (this.ta.focus) this.ta.focus();
+    if (this.ta.setSelectionRange) {
+      try { this.ta.setSelectionRange(pos, pos + this.lines[n - 1].length); } catch (e) { /* ignore */ }
+    }
     // scroll textarea to line
     var lh = 19;
     this.ta.scrollTop = Math.max(0, (n - 1) * lh - this.ta.clientHeight / 2);
@@ -146,7 +167,7 @@ Editor.prototype.gotoLine = function (n, flash) {
   this.render();
   if (flash !== false) {
     var self = this;
-    requestAnimationFrame(function () {
+    raf(function () {
       var row = self.rows.querySelector('[data-ln="' + n + '"]');
       if (row) {
         row.classList.add("flash");

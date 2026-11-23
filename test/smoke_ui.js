@@ -127,8 +127,12 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
     ids.problems.innerHTML.slice(0, 200));
 
   console.log("== tabs ==");
+  function fakeTab(t) {
+    return { nodeType: 1, tagName: "BUTTON", parentNode: null,
+      getAttribute(k) { return k === "data-tab" ? t : null; } };
+  }
   ["struct", "opcodes", "hex", "guide", "editor"].forEach((t) => {
-    fire("tabs", "click", { target: { closest: () => ({ dataset: { tab: t } }) } });
+    fire("tabs", "click", { target: fakeTab(t) });
   });
   ok(ids["tab-editor"].classList.contains("active"), "tab switching works");
 
@@ -161,7 +165,7 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   ok((ids.asmState.innerHTML || "").indexOf("assembled") >= 0, "re-assembled after edit");
 
   console.log("== hex ==");
-  fire("tabs", "click", { target: { closest: () => ({ dataset: { tab: "hex" } }) } });
+  fire("tabs", "click", { target: fakeTab("hex") });
   ids.hexPage.value = 2;
   fire("hexPage", "input");
   ok(ids.hexDump.innerHTML.indexOf("0000") >= 0, "hex page 2 rendered");
@@ -228,28 +232,28 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   console.log("== source save -> reopen round-trip ==");
   let savedBytes = null;
   sandbox.Blob = function (parts) { savedBytes = parts[0]; };
-  const createdInputs = [];
-  const realCreate = documentStub.createElement;
-  documentStub.createElement = function (tag) {
-    const el = realCreate(tag);
-    if (tag === "input") createdInputs.push(el);
-    return el;
-  };
   sandbox.FileReader = function () {
     return {
-      result: null, onload: null,
+      result: null, onload: null, onerror: null,
       readAsText() {
         this.result = Buffer.from(savedBytes).toString("utf8");
         if (this.onload) this.onload();
       },
-      readAsArrayBuffer() {}
+      readAsArrayBuffer() {
+        const ab = new ArrayBuffer(savedBytes.length);
+        new Uint8Array(ab).set(savedBytes);
+        this.result = ab;
+        if (this.onload) this.onload();
+      }
     };
   };
   fire("btnDlSrc", "click");
   ok(savedBytes && savedBytes.length > 1000000, "source blob captured (" +
     (savedBytes ? savedBytes.length : 0) + " bytes)");
+  // persistent attached input (iOS-Safari-safe flow)
+  const srcInput = documentStub.getElementById("fileSrc");
   fire("btnOpenSrc", "click");
-  const srcInput = createdInputs[createdInputs.length - 1];
+  ok(typeof srcInput.onchange === "function", "open-source arms the file input");
   srcInput.files = [{ name: "main_src.txt" }];
   srcInput.onchange();
   await tick(50);
@@ -259,6 +263,24 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   fire("btnBuild", "click");
   await tick(100);
   ok((ids.asmState.innerHTML || "").indexOf("assembled") >= 0, "reopened source assembles");
+
+  console.log("== binary .scm open via file input ==");
+  sandbox.FileReader = function () {
+    return {
+      result: null, onload: null, onerror: null,
+      readAsArrayBuffer() { this.result = scmAB; if (this.onload) this.onload(); },
+      readAsText() {}
+    };
+  };
+  const scmInput = documentStub.getElementById("fileScm");
+  fire("btnOpen", "click");
+  ok(typeof scmInput.onchange === "function", "open-.scm arms the file input");
+  scmInput.files = [{ name: "main.scm" }];
+  scmInput.onchange();
+  await tick(1500);
+  ok((ids.fileBadge.innerHTML || "").indexOf("main.scm") >= 0, "binary open loads main.scm");
+  ok(ids.secSelect.children.length === 99, "binary open yields 99 sections");
+  ok(!ids.errBanner.classList.contains("on"), "no error banner during whole session");
 
   console.log("\n" + pass + " passed, " + fail + " failed");
   process.exit(fail ? 1 : 0);
