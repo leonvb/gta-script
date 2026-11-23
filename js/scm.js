@@ -1007,6 +1007,63 @@ function widthForInt(v) {
   return 4;
 }
 
+// ---- fast single-section check for live editing ----
+// Runs the line-local front end (comment stripping + pass 1) plus the same
+// argument-count validation the full assembler applies, and section-local
+// label sanity (undefined references, duplicate definitions). Deliberately
+// NOT a full assemble: no cross-section mission layout, no encoding, so it
+// stays fast enough to run while typing. `lines` is one section's text
+// lines; reported line numbers are 1-based within it. `externals` is an
+// optional list of label names defined elsewhere but visible here (the
+// assembler lets missions reference main-block labels). Label findings are
+// warnings, never errors: only the full assemble sees every namespace.
+function checkSection(lines, externals) {
+  var errors = [], warnings = [];
+  var stripped = stripComments(lines.join("\n"));
+  errors = stripped.errors.slice();
+  var items = asmPass1(stripped.lines, errors);
+  var i, it, k;
+  for (i = 0; i < items.length; i++) {
+    it = items[i];
+    if (it.t !== "insn") continue;
+    var cmd = cmdById(it.id);
+    if (!cmd) continue; // unknown opcode already reported by pass 1
+    var need = cmdArgs(cmd).length, variadic = isVariadic(cmd);
+    if ((!variadic && it.args.length !== need) ||
+        (variadic && it.args.length < need - 1)) {
+      errors.push({ line: it.line, msg: cmdName(cmd) + " takes " +
+        (variadic ? "at least " + (need - 1) : need) + " argument(s), got " + it.args.length });
+    }
+  }
+  var defs = {}, dups = {};
+  for (i = 0; i < items.length; i++) {
+    it = items[i];
+    if (it.t !== "label") continue;
+    if (defs[it.name]) dups[it.name] = it.line;
+    else defs[it.name] = it.line;
+  }
+  Object.keys(dups).forEach(function (dn) {
+    warnings.push({ line: dups[dn], msg: "duplicate label :" + dn + " in this section" });
+  });
+  if (externals) {
+    for (var e = 0; e < externals.length; e++) {
+      defs[String(externals[e]).toUpperCase()] = -1; // visible, defined elsewhere
+    }
+  }
+  var missing = {};
+  for (i = 0; i < items.length; i++) {
+    it = items[i];
+    if (it.t !== "insn") continue;
+    for (k = 0; k < it.args.length; k++) {
+      if (it.args[k].k !== "label" || defs[it.args[k].name] || missing[it.args[k].name]) continue;
+      missing[it.args[k].name] = 1;
+      warnings.push({ line: it.line, msg: "label @" + it.args[k].name + " is not defined in this section" });
+    }
+  }
+  warnings.sort(function (a, b) { return a.line - b.line; });
+  return { errors: errors, warnings: warnings };
+}
+
 function assemble(text) {
   var errors = [], warnings = [];
   if (typeof text !== "string") {
@@ -1541,6 +1598,7 @@ return {
   missionRanges: missionRanges,
   disassemble: disassemble,
   assemble: assemble,
+  checkSection: checkSection,
   describeCommand: describeCommand,
   commandList: commandList,
   formatFloat: formatFloat,

@@ -25,6 +25,9 @@ python3 -m http.server 8080
   padding); enforces engine budgets (225,512-byte main block, 35,000-byte missions).
 - **Code view** — virtualized, syntax-highlighted listing that stays fast at 175k lines;
   in-place editing, global search, click-an-error-to-jump problem list.
+- **Editing aids** — autocomplete for opcodes, `$globals`, `@labels` and `#models`,
+  per-line opcode signature hints with did-you-mean, live gutter error marking,
+  click-a-label-to-jump, code snippets, go-to-line.
 - **Symbol names** — all 8,480 globals get friendly names (`player_char`,
   `mission_flag`, `main_tick_ms`) instead of raw `$offsets`: color-coded by kind
   (constant, handle, flag, coordinate, …), hover for read/write stats, click to
@@ -40,8 +43,8 @@ python3 -m http.server 8080
 ## Tests
 
 ```sh
-node test/run_tests.js   # engine + symbols — 117 tests
-node test/smoke_ui.js    # headless UI: drives the real app against main.scm — 67 tests
+node test/run_tests.js   # engine + symbols — 138 tests
+node test/smoke_ui.js    # headless UI: drives the real app against main.scm — 107 tests
 ```
 
 ## Layout
@@ -57,8 +60,6 @@ node test/smoke_ui.js    # headless UI: drives the real app against main.scm —
 | `js/app.js` | browser wiring: views, assembly flow, problems, downloads |
 | `tools/build_db.py` | regenerates `js/opcodes.js` from `tools/ref/` |
 | `tools/build_symbols.js` | regenerates `js/symbols.js` from `main.scm` |
-| `tools/scm_to_cs.js` | translates missions 0-2 to the C# flavour sketch |
-| `csharp/Missions0_2.cs` | generated C# flavour sketch: INITIAL/INTRO/HOTEL |
 | `tools/ref/` | database inputs (gta3sc gtavc XMLs + licence) |
 | `test/` | engine tests + headless UI smoke test |
 | `main.scm` | retail Vice City PC script (bundled test target) |

@@ -178,6 +178,41 @@ main { flex: 1; min-height: 0; position: relative; display: flex; }
   font: 13px/19px var(--mono); text-align: right; color: var(--faint);
   padding: 8px 12px 40px 0; overflow: hidden; user-select: none;
 }
+/* completion dropdown, snippet menu, gutter marks, sig hint */
+.toolbar { position: relative; }
+.edcomp {
+  position: absolute; z-index: 30; display: none;
+  min-width: 250px; max-width: 360px; max-height: 200px; overflow: auto;
+  background: #14172e; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); font: 12px var(--mono);
+  padding: 4px;
+}
+.edcomp-row {
+  display: flex; gap: 10px; padding: 4px 10px; border-radius: 5px;
+  cursor: pointer; white-space: nowrap; line-height: 16px;
+}
+.edcomp-row .ct { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.edcomp-row .cd { color: var(--faint); margin-left: auto; padding-left: 8px; }
+.edcomp-row.sel { background: rgba(34, 211, 238, 0.16); }
+.snipmenu {
+  position: absolute; top: calc(100% + 4px); left: 10px; z-index: 40;
+  background: #14172e; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); padding: 6px; min-width: 280px;
+}
+.snipmenu button {
+  display: block; width: 100%; text-align: left; background: transparent;
+  border: 1px solid transparent; border-radius: 6px; padding: 7px 10px;
+}
+.snipmenu button:hover { background: var(--panel2); border-color: var(--border); }
+.snipmenu button b { display: block; font-size: 12px; }
+.snipmenu button small { color: var(--dim); font-size: 11px; font-weight: 400; }
+.editgutter .gln { display: block; }
+.editgutter .gln.mk-err { color: #fca5a5; background: rgba(239, 68, 68, 0.22); }
+.editgutter .gln.mk-warn { color: #fcd34d; background: rgba(251, 191, 36, 0.13); }
+.t-labref { cursor: pointer; }
+.t-labref:hover { text-decoration: underline; }
+.sighint { color: var(--cyan); flex: 0 1 auto; min-width: 0; max-width: 44vw; }
+#gotoInput { width: 92px; flex: 0 0 auto; }
 /* problems */
 .problems {
   flex: 0 0 auto; max-height: 30%; overflow: auto;

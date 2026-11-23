@@ -272,6 +272,86 @@ asmErr(HDR.concat(["HEX", "A4 03"]), "HEX block without END");
   ok(a.ok, "mission->main ref assembles: " + JSON.stringify(a.errors));
 }
 
+console.log("== unit: checkSection (live check) ==");
+function chk(lines, ext) { return SCM.checkSection(lines, ext); }
+{
+  const r = chk([":A", "0001: WAIT 0", "0002: GOTO @A"]);
+  eq(r.errors.length, 0, "clean section");
+  eq(r.warnings.length, 0, "no warnings");
+}
+{
+  const r = chk(["BOGUS_OPCODE @FOO"]);
+  eq(r.errors.length, 1, "unknown opcode is an error");
+  ok(/expected an opcode/.test(r.errors[0].msg), "unknown opcode message");
+}
+{
+  const r = chk(["0001: WAIT"]);
+  eq(r.errors.length, 1, "missing arg is an error");
+  ok(/WAIT takes 1 argument/.test(r.errors[0].msg), "arg-count message matches assembler");
+}
+{
+  // variadic: GOTO with extra targets is still wrong (GOTO is not variadic),
+  // but START_NEW_SCRIPT takes optional trailing args
+  const r = chk(["004F: START_NEW_SCRIPT @A", ":A"]);
+  eq(r.errors.length, 0, "variadic minimum accepted");
+}
+{
+  const r = chk(["0002: WAIT 0"]);
+  ok(/0002 is GOTO, not WAIT/.test(r.errors[0].msg), "prefix/name mismatch");
+}
+{
+  const r = chk(["00BC: PRINT_NOW 'ABC", "0001: WAIT 0"]);
+  ok(/unterminated/.test(r.errors[0].msg), "unterminated string");
+  eq(r.errors[0].line, 1, "error line is section-relative");
+}
+{
+  const r = chk(["0002: GOTO @NOPE"]);
+  eq(r.errors.length, 0, "undefined label is not an error");
+  eq(r.warnings.length, 1, "undefined label warns");
+  ok(/@NOPE.*not defined/.test(r.warnings[0].msg), "undefined label message");
+}
+{
+  const r = chk(["0002: GOTO @SHARED"], ["shared"]);
+  eq(r.warnings.length, 0, "externals silence undefined-label warnings");
+}
+{
+  const r = chk([":A", ":A", "0001: WAIT 0"]);
+  eq(r.warnings.length, 1, "duplicate label warns");
+  eq(r.warnings[0].line, 2, "dup points at the second definition");
+}
+{
+  const r = chk(["DEFINE MISSIONS", "0001: WAIT 0"]);
+  ok(/bad DEFINE/.test(r.errors[0].msg), "malformed directive");
+}
+{
+  const r = chk(["HEX", "A4 03", "END", "0001: WAIT 0"]);
+  eq(r.errors.length, 0, "HEX block passes");
+  const r2 = chk(["HEX", "A4 03"]);
+  ok(/without END/.test(r2.errors[0].msg), "unterminated HEX block");
+}
+{
+  // whole retail file: every section clean (missions see main labels)
+  const mainLbl = [];
+  dis.sections.forEach(sec => {
+    if (sec.id !== "main") return;
+    sec.lines.forEach(l => {
+      const m = /^:([A-Za-z0-9_]+)/.exec(l.trim());
+      if (m) mainLbl.push(m[1]);
+    });
+  });
+  let E = 0, W = 0, first = "";
+  dis.sections.forEach(sec => {
+    const ext = sec.id.indexOf("mission:") === 0 ? mainLbl : null;
+    const r = SCM.checkSection(sec.lines, ext);
+    E += r.errors.length; W += r.warnings.length;
+    if (!first && (r.errors.length || r.warnings.length)) {
+      first = sec.id + " " + JSON.stringify(r).slice(0, 140);
+    }
+  });
+  eq(E, 0, "retail sections: no errors (" + first + ")");
+  eq(W, 0, "retail sections: no warnings (" + first + ")");
+}
+
 console.log("== unit: reference API ==");
 eq(SCM.commandList().length, 1424, "command count");
 {
