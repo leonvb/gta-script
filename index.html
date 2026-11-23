@@ -38,9 +38,12 @@
     <span class="spacer"></span>
     <input id="searchInput" placeholder="search all code (Enter)" size="28">
   </div>
-  <div id="searchResults"></div>
-  <div id="problems"></div>
-  <div id="edMount"></div>
+  <div id="searchResults" class="problems"></div>
+  <div id="problems" class="problems"></div>
+  <div id="edMount" class="codewrap">
+    <div id="edView" class="codeview"><div id="edRows" class="coderows"></div></div>
+    <div id="edEdit" class="editwrap"><div id="edGutter" class="editgutter"></div><textarea id="editArea" spellcheck="false"></textarea></div>
+  </div>
 </section>
 
 <section id="tab-struct" class="view">
