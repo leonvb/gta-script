@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VC SCM Studio — Vice City script editor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <div class="logo"><span class="vc">VC</span> SCM <span class="st">STUDIO</span></div>
+  <div class="filebar">
+    <button id="btnOpen" title="Open a retail main.scm">Open .scm</button>
+    <button id="btnOpenSrc" title="Open a previously saved source text">Open source</button>
+    <button id="btnSample" title="Load the bundled retail main.scm">Load bundled main.scm</button>
+    <span id="fileBadge" class="filebadge">no file loaded</span>
+  </div>
+</header>
+<nav id="tabs" class="tabs">
+  <button data-tab="editor" class="active">Code<span id="cntProblems" class="cnt"></span></button>
+  <button data-tab="struct">Structure</button>
+  <button data-tab="opcodes">Opcodes</button>
+  <button data-tab="hex">Hex</button>
+  <button data-tab="guide">Guide</button>
+  <span class="spacer"></span>
+  <span id="asmState"><span class="warn">not assembled</span></span>
+  <button id="btnBuild" class="primary" title="Assemble all sections (Ctrl+S)">Assemble</button>
+  <button id="btnDlSrc" title="Download the current source text">Save source</button>
+  <button id="btnDlScm" disabled title="Download the assembled SCM">Save .scm</button>
+</nav>
+
+<main>
+<section id="tab-editor" class="tab active">
+  <div class="toolbar">
+    <button id="btnEdit" title="Toggle edit mode for this section">Edit</button>
+    <select id="secSelect"></select>
+    <span id="edStatus" class="status"></span>
+    <span class="spacer"></span>
+    <input id="searchInput" placeholder="search all code (Enter)" size="28">
+  </div>
+  <div id="searchResults"></div>
+  <div id="problems"></div>
+  <div id="edMount"></div>
+</section>
+
+<section id="tab-struct" class="view">
+  <div class="scroll"><div id="structRoot"><div class="card">Open a main.scm file to inspect its structure.</div></div></div>
+</section>
+
+<section id="tab-opcodes" class="view">
+  <div class="toolbar">
+    <input id="opSearch" type="text" placeholder="search opcode name or hex id (e.g. 00D6)" size="40">
+  </div>
+  <div class="scroll">
+    <div id="opDetail" class="opdetail" style="display:none"></div>
+    <div id="opList"></div>
+  </div>
+</section>
+
+<section id="tab-hex" class="view">
+  <div class="toolbar">
+    <select id="hexRegion"></select>
+    <input id="hexPage" type="number" min="0" value="0" style="width:70px" title="page number">
+    <span id="hexPageInfo" class="status"></span>
+    <span class="spacer"></span>
+    <span id="hexLbl" class="status"></span>
+  </div>
+  <div class="scroll"><div id="hexDump" class="hexview"></div></div>
+</section>
+
+<section id="tab-guide" class="view">
+<div class="scroll"><div class="guide">
+<h2>VC SCM Studio — quick guide</h2>
+<p>This is a static SCM editor for <b>Grand Theft Auto: Vice City (PC)</b>. Everything runs in
+your browser — no server. Open <code>main.scm</code> from your game folder (or use the bundled
+copy), edit the script, press <b>Assemble</b>, and save the new <code>main.scm</code> back.
+Always back up your original first.</p>
+
+<h3>1. Workflow</h3>
+<ol>
+<li><b>Load</b>: <i>Open .scm</i> reads a binary SCM and disassembles it into readable source,
+split into HEADER / MAIN / MISSION sections. <i>Open source</i> restores a previously saved
+source text, including your edits.</li>
+<li><b>Edit</b>: pick a section, press <b>Edit</b> (or double-click the code), type, press
+<b>Edit/Done</b> or <kbd>Esc</kbd> to return to the readable view. Edited sections are marked
+with ● in the picker.</li>
+<li><b>Assemble</b> (or <kbd>Ctrl+S</kbd>): builds one binary from all sections. Errors appear
+in the problem list — click one to jump to the line.</li>
+<li><b>Save</b>: <i>Save .scm</i> downloads the assembled game file; <i>Save source</i>
+downloads the text so you can keep working later.</li>
+</ol>
+
+<h3>2. The source language</h3>
+<p>The disassembler prints the widest-compatible subset of SCM assembly:</p>
+<pre>:LABEL_0001A4B0        // a jump target. GOSUB-safe if inside one section
+0004: $8 0              // opcode 0004 (SET_VAR_INT), two operands
+00D6: 0                 // conditions are plain opcodes, see below
+004D: @LABEL_0001A4B0   // GOTO_IF_FALSE
+0050: @LABEL_0001A5C0   // GOSUB
+0051:                   // RETURN
+0002: @LABEL_1 @LABEL_2 // jump table (mission select)
+00BC: 'TEXT_KEY' 5000 1 // 8-char text label
+03A4: 'MAIN'            // SCRIPT_NAME uses a text label too
+0001: 250              // WAIT 250 ms
+00A5: #LANDSTAL 0.0 0.0 0.0 $12 // model = integer, written with its map name</div>
+<ul>
+<li><b>Comments</b> start with <code>//</code> and run to end of line.</li>
+<li><b>Globals</b> are <code>$8</code>, <code>$12</code>… always multiples of 4. The assembler
+auto-sizes the globals block from the highest <code>$N</code> you use.</li>
+<li><b>Locals</b> are <code>0@</code> … <code>15@</code>, plus timers <code>16@</code>,
+<code>17@</code>. Each script has its own locals.</li>
+<li><b>Labels</b>: define with <code>:NAME</code>, use with <code>@NAME</code>. Labels live
+inside one section — never jump between missions.</li>
+<li><b>Opcodes</b> may be written with or without the hex prefix: <code>WAIT 0</code> and
+<code>0001: WAIT 0</code> both work. If both are given and disagree, the written prefix wins
+and produces an error pointing at the canonical opcode.</li>
+<li><b>Conditions</b>: <code>00D6</code> (ANDOR) opens a condition chain and
+<code>004D</code> (GOTO_IF_FALSE) jumps when it fails; <code>NOT</code> before an instruction
+negates that check. These are ordinary opcodes in this view — keep every chain paired with
+its jump or the game will misbehave.</li>
+</ul>
+
+<h3>3. Opcodes view</h3>
+<p>Search the full 1,424-opcode database by name or hex id (e.g. <code>00D6</code>). Clicking
+an opcode shows every argument with its type, description, enum and rules — then
+<i>Insert</i> drops a ready-made template line into your current section.</p>
+
+<h3>4. Structure view</h3>
+<p>Shows the real engine budgets from the binary: main-block size (limit 225,512 bytes on PC),
+largest mission (limit 35,000), mission count, object list and global usage. Bars turn red
+when a limit is exceeded — the game will not load such a file.</p>
+
+<h3>5. Things to know</h3>
+<ul>
+<li>Mission order in the file decides the mission numbers — do not reorder or delete
+<code>//== SECTION: MISSION n ==</code> headers.</li>
+<li>The HEADER section holds the object list (<code>DEFINE OBJECT</code>) and the
+<code>DEFINE MISSIONS</code> count. Keep the count equal to the number of mission sections.</li>
+<li>Text labels hold at most 7 visible characters plus the terminator; longer keys are
+truncated with a warning.</li>
+<li>Optional/variadic arguments (e.g. extra GOTO targets, <code>STRING_FORMAT</code> args)
+are used as-is — match the count the original line had.</li>
+</ul>
+
+<h3>6. References</h3>
+<ul>
+<li><a href="https://gtamods.com/wiki/SCM_language">SCM language reference (GTAMods Wiki)</a></li>
+<li><a href="https://github.com/thelink2012/gta3sc">gta3sc — opcode database source</a></li>
+<li><a href="https://github.com/mrxenginner/reVC">reVC — engine behaviour reference</a></li>
+</ul>
+<p class="fine">Static site — host the folder as-is on GitHub Pages. Built against the retail
+PC main.scm (1,269,133 bytes, 97 missions).</p>
+</div>
+</section>
+</main>
+
+<div id="toast"></div>
+<script src="js/opcodes.js"></script>
+<script src="js/scm.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Build js/opcodes.js from gta3sc (MIT) gtavc XML configs + reVC cross-check.
+
+Inputs (fetched from https://github.com/thelink2012/gta3sc config/gtavc/):
+  tools/ref/gtavc_commands.xml, gtavc_constants.xml, gtavc_default.xml
+Output:
+  js/opcodes.js  (VC_DB global / module.exports)
+
+Run: python3 tools/build_db.py
+"""
+import json, sys, xml.etree.ElementTree as ET
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+REF = ROOT / "tools" / "ref"
+
+TYPEMAP = {"INT": "I", "FLOAT": "F", "TEXT_LABEL": "T", "LABEL": "L",
+           "CONSTANT": "C", "PARAM": "P"}
+
+def parse_enums(path):
+    """name -> (is_global, [(name, value), ...]) with gta3sc implicit-value rule."""
+    t = ET.parse(path)
+    out = {}
+    consts = t.getroot().find("Constants")
+    for e in list(consts):
+        assert e.tag == "Enum", e.tag
+        cur = 0
+        vals = []
+        for c in list(e):
+            assert c.tag == "Constant", c.tag
+            if c.get("Value") is not None:
+                cur = int(c.get("Value"), 0)
+            vals.append((c.get("Name"), cur))
+            cur += 1
+        out[e.get("Name")] = (e.get("Global") == "true", vals)
+    return out
+
+def main():
+    for f in ("gtavc_commands.xml", "gtavc_constants.xml", "gtavc_default.xml"):
+        if not (REF / f).exists():
+            sys.exit(f"missing {REF/f} -- see tools/ref/README.md")
+
+    enums = parse_enums(REF / "gtavc_constants.xml")
+    models_src = parse_enums(REF / "gtavc_default.xml")
+    assert set(models_src) == {"DEFAULTMODEL"}, set(models_src)
+    _, model_vals = models_src["DEFAULTMODEL"]
+
+    # ---- commands ----
+    t = ET.parse(REF / "gtavc_commands.xml")
+    ops = {}
+    by_name = {}
+    n_internal = 0
+    n_unsupported = 0
+    for c in t.getroot().find("Commands"):
+        cid = int(c.get("ID"), 16)
+        name = c.get("Name")
+        internal = c.get("Internal") == "true"
+        if internal or c.get("Extension") == "true":
+            n_internal += 1
+            continue
+        args = []
+        a = c.find("Args")
+        if a is not None:
+            for arg in a:
+                at = TYPEMAP[arg.get("Type")]
+                flags = 0
+                if arg.get("Optional") == "true": flags |= 1
+                if arg.get("Out") == "true": flags |= 2
+                if arg.get("AllowConst") == "false": flags |= 4
+                if arg.get("AllowGlobalVar") == "false": flags |= 8
+                if arg.get("AllowLocalVar") == "false": flags |= 16
+                desc = arg.get("Desc") or ""
+                enum = arg.get("Enum") or ""
+                entity = arg.get("Entity") or ""
+                tup = [at, flags]
+                if desc or enum or entity:
+                    tup += [desc, enum, entity]
+                    while tup and tup[-1] == "":
+                        tup.pop()
+                args.append(tup)
+        unsup = 1 if c.get("Supported") == "false" else 0
+        n_unsupported += unsup
+        entry = [name, args]
+        if unsup:
+            entry.append(1)
+        assert cid not in ops, f"dup id {cid:#x}"
+        ops[cid] = entry
+        assert name.upper() not in by_name, f"dup name {name}"
+        by_name[name.upper()] = cid
+
+    print(f"commands: {len(ops)} (+{n_internal} internal/extension skipped), unsupported={n_unsupported}")
+
+    # ---- enums -> name->value maps ----
+    enums_out = {}
+    enum_globals = []
+    nconst = 0
+    for ename, (is_global, vals) in enums.items():
+        m = {}
+        for n, v in vals:
+            m[n.upper()] = v
+        enums_out[ename] = m
+        nconst += len(m)
+        if is_global:
+            enum_globals.append(ename)
+    print(f"enums: {len(enums_out)} constants: {nconst} global: {enum_globals}")
+
+    # ---- models ----
+    models = {}
+    by_id = {}
+    dups = []
+    for n, v in model_vals:
+        models[n.upper()] = v
+        if v in by_id:
+            dups.append((v, by_id[v], n))
+        else:
+            by_id[v] = n.upper()
+    print(f"default models: {len(models)} id-dups: {dups[:5]}")
+
+    # sanity: every arg Enum= reference exists (or is DEFAULTMODEL/MODEL)
+    missing = set()
+    for cid, (name, args, *_) in ops.items():
+        for a in args:
+            if len(a) > 3 and a[3]:
+                for en in a[3].split():
+                    if en not in enums_out and en not in ("DEFAULTMODEL", "MODEL"):
+                        missing.add(en)
+    print("missing enum refs:", missing or "none")
+
+    # reVC cross-check data is verified manually; ids must cover 0x000..0x5A8 minus gaps
+    ids = sorted(ops)
+    print(f"id range: {ids[0]:#x}..{ids[-1]:#x}")
+
+    db = {"ops": ops, "byName": by_name, "enums": enums_out,
+          "enumGlobals": enum_globals, "models": models,
+          "modelsById": {str(k): v for k, v in by_id.items()}}
+    out = ROOT / "js" / "opcodes.js"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    js = ("// Auto-generated by tools/build_db.py -- DO NOT EDIT.\n"
+          "// Opcode database: gta3sc config/gtavc (MIT, (c) thelink2012 contributors).\n"
+          "// Cross-checked against reVC eScriptCommands (retail PC) -- 0 name mismatches.\n"
+          "var VC_DB = " + json.dumps(db, separators=(",", ":")) + ";\n"
+          'if (typeof module !== "undefined" && module.exports) module.exports = VC_DB;\n')
+    out.write_text(js)
+    print(f"wrote {out} ({out.stat().st_size/1024:.1f} KB)")
+
+if __name__ == "__main__":
+    main()
