@@ -142,6 +142,10 @@ function refreshBadge() {
   $("fileBadge").innerHTML = escHtml(S.fileName) +
     (n ? ' <span class="dirty">\u25cf ' + n + " edited</span>" : "") +
     (S.bytes ? " (" + S.bytes.length + " bytes)" : "");
+  var lines = 0;
+  for (var i = 0; i < S.sections.length; i++) lines += S.sections[i].lines.length;
+  $("fileMeta").textContent = S.sections.length ?
+    (S.sections.length + " sections \u2022 " + lines + " lines") : "no file loaded";
 }
 function escHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -176,7 +180,7 @@ function loadBytesNow(name, u8) {
   S.cur = "main";
   S.editing = false;
   $("btnEdit").textContent = "Edit";
-  rebuildSecSelect();
+  rebuildSecNav();
   showSection("main", true);
   renderProblems();
   renderStructure();
@@ -225,7 +229,7 @@ function loadSourceFile(name, text) {
   S.cur = secs[0].id;
   S.editing = false;
   $("btnEdit").textContent = "Edit";
-  rebuildSecSelect();
+  rebuildSecNav();
   showSection(S.cur, true);
   renderProblems();
   refreshBadge();
@@ -259,16 +263,34 @@ function pickFile(inputId, accept, binary, cb) {
 
 /* ------------------------- editor / navigation ------------------------ */
 
-function rebuildSecSelect() {
-  var sel = $("secSelect");
-  sel.innerHTML = "";
+function rebuildSecNav() {
+  var nav = $("secNav");
+  var q = ($("secFilter").value || "").toLowerCase();
+  var html = "";
+  var shown = 0;
   S.sections.forEach(function (s) {
-    var o = document.createElement("option");
-    o.value = s.id;
-    o.textContent = s.title + " (" + s.lines.length + ")" + (S.dirty[s.id] ? " *" : "");
-    sel.appendChild(o);
+    if (q && s.title.toLowerCase().indexOf(q) < 0 && s.id.toLowerCase().indexOf(q) < 0) return;
+    shown++;
+    html += '<button class="secitem' + (s.id === S.cur ? " active" : "") + '" data-sec="' + s.id + '">' +
+      '<span class="secname">' + escHtml(s.title) + "</span>" +
+      '<span class="seclines">' + s.lines.length + "</span>" +
+      (S.dirty[s.id] ? '<span class="secdot">\u25cf</span>' : "") + "</button>";
   });
-  sel.value = S.cur;
+  nav.innerHTML = html || '<div class="secempty">no sections match</div>';
+  $("secCount").textContent = q ? (shown + " of " + S.sections.length + " sections")
+    : (S.sections.length + " sections");
+  markSecActive();
+}
+function markSecActive() {
+  var items = $("secNav").querySelectorAll(".secitem");
+  for (var i = 0; i < items.length; i++) {
+    var on = getData(items[i], "sec") === S.cur;
+    if (on) items[i].classList.add("active");
+    else items[i].classList.remove("active");
+    if (on && items[i].scrollIntoView) {
+      try { items[i].scrollIntoView({ block: "nearest" }); } catch (e) { /* old browser */ }
+    }
+  }
 }
 
 function applyEdit() {
@@ -291,7 +313,7 @@ function showSection(id, force) {
   var sec = curSec();
   S.editing = false;
   $("btnEdit").textContent = "Edit";
-  $("secSelect").value = id;
+  markSecActive();
   ed.setMode("view");
   ed.setLines(sec.lines);
   updateEdStatus();
@@ -322,7 +344,7 @@ function setEditing(on) {
     S.editing = false;
     ed.setMode("view");
     $("btnEdit").textContent = "Edit";
-    rebuildSecSelect();
+    rebuildSecNav();
     refreshBadge();
   }
   updateEdStatus();
@@ -388,7 +410,7 @@ function updateAsmState() {
 function doAssemble() {
   if (!S.sections.length) { toast("Nothing to assemble -- open a file first."); return false; }
   if (S.editing) applyEdit();
-  rebuildSecSelect();
+  rebuildSecNav();
   var t0 = Date.now();
   var res;
   try {
@@ -546,7 +568,7 @@ function renderStructure() {
     html += '<div style="max-height:260px;overflow:auto;margin-top:8px"><table class="grid">';
     h.models.forEach(function (m, i) {
       var disp = m === "" ? "<i>(empty)</i>" : escHtml(m);
-      html += "<tr><td>-" + (i + 1) + "</td><td>#" + disp + "</td></tr>";
+      html += '<tr data-model="' + escHtml(m) + '"><td>-' + (i + 1) + "</td><td>#" + disp + "</td></tr>";
     });
     html += "</table></div></details></div>";
   }
@@ -557,6 +579,20 @@ function renderStructure() {
       switchTab("editor");
       showSection("mission:" + getData(this, "mis"), true);
     });
+  }
+  applyMisFilter();
+}
+
+function applyMisFilter() {
+  var q = ($("misFilter").value || "").toLowerCase();
+  var root = $("structRoot");
+  var sels = ["tr[data-mis]", "tr[data-model]"];
+  for (var s = 0; s < sels.length; s++) {
+    var rows = root.querySelectorAll(sels[s]);
+    for (var i = 0; i < rows.length; i++) {
+      var t = (rows[i].textContent || "").toLowerCase();
+      rows[i].style.display = (!q || t.indexOf(q) >= 0) ? "" : "none";
+    }
   }
 }
 
@@ -664,7 +700,7 @@ function insertOpTemplate() {
     S.dirty[sec.id] = true;
     ed.setLines(sec.lines);
   }
-  rebuildSecSelect();
+  rebuildSecNav();
   refreshBadge();
   switchTab("editor");
   toast("Inserted " + d.name + " at the end of " + sec.title + ".");
@@ -677,7 +713,7 @@ function renderHex() {
   S.hexBytes = S.asm ? S.asm.bytes : S.bytes;
   S.hexRegions = [];
   if (!S.hexBytes) {
-    $("hexRoot").innerHTML = '<div class="card">Hex dump appears after you open or assemble a file.</div>';
+    $("hexDump").innerHTML = '<div class="card">Hex dump appears after you open or assemble a file.</div>';
     return;
   }
   var u8 = S.hexBytes, h = null;
@@ -784,7 +820,11 @@ function wire() {
     });
   });
   $("btnEdit").addEventListener("click", function () { setEditing(!S.editing); });
-  $("secSelect").addEventListener("change", function () { showSection(this.value, true); });
+  $("secNav").addEventListener("click", function (e) {
+    var b = closestEl(e.target, "button", "data-sec");
+    if (b) showSection(getData(b, "sec"), true);
+  });
+  $("secFilter").addEventListener("input", function () { rebuildSecNav(); });
   $("searchInput").addEventListener("input", runSearch);
   $("btnBuild").addEventListener("click", doAssemble);
   $("btnDlSrc").addEventListener("click", function () {
@@ -800,6 +840,7 @@ function wire() {
   $("opSearch").addEventListener("input", function () { renderOpList(this.value); });
   $("hexRegion").addEventListener("change", function () { $("hexPage").value = 0; renderHexPage(); });
   $("hexPage").addEventListener("input", renderHexPage);
+  $("misFilter").addEventListener("input", applyMisFilter);
   buildOpList();
 }
 

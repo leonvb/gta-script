@@ -3,17 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>VC SCM Studio — Vice City script editor</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header>
-  <div class="logo"><span class="vc">VC</span> SCM <span class="st">STUDIO</span></div>
-  <div class="filebar">
+<header id="topbar">
+  <div class="brand">
+    <span class="logo"><span class="vc">VC</span> SCM <span class="st">STUDIO</span></span>
+    <span class="tagline">Vice City script editor</span>
+  </div>
+  <div class="topgroup">
     <button id="btnOpen" title="Open a retail main.scm">Open .scm</button>
     <button id="btnOpenSrc" title="Open a previously saved source text">Open source</button>
-    <button id="btnSample" title="Load the bundled retail main.scm">Load bundled main.scm</button>
-    <span id="fileBadge" class="filebadge">no file loaded</span>
+    <button id="btnSample" class="ghost" title="Load the bundled retail main.scm">Sample</button>
+  </div>
+  <div id="fileBadge" class="filebadge">no file loaded</div>
+  <div class="topgroup right">
+    <button id="btnBuild" class="primary" title="Assemble all sections (Ctrl+S)">Assemble</button>
+    <button id="btnDlSrc" title="Download the current source text">Save source</button>
+    <button id="btnDlScm" disabled title="Download the assembled SCM">Save .scm</button>
   </div>
 </header>
 <nav id="tabs" class="tabs">
@@ -22,46 +33,56 @@
   <button data-tab="opcodes">Opcodes</button>
   <button data-tab="hex">Hex</button>
   <button data-tab="guide">Guide</button>
-  <span class="spacer"></span>
-  <span id="asmState"><span class="warn">not assembled</span></span>
-  <button id="btnBuild" class="primary" title="Assemble all sections (Ctrl+S)">Assemble</button>
-  <button id="btnDlSrc" title="Download the current source text">Save source</button>
-  <button id="btnDlScm" disabled title="Download the assembled SCM">Save .scm</button>
 </nav>
 
 <main>
-<section id="tab-editor" class="tab active">
+<section id="tab-editor" class="view active">
   <div class="toolbar">
     <button id="btnEdit" title="Toggle edit mode for this section">Edit</button>
-    <select id="secSelect"></select>
     <span id="edStatus" class="status"></span>
     <span class="spacer"></span>
-    <input id="searchInput" placeholder="search all code (Enter)" size="28">
+    <input id="searchInput" type="text" placeholder="search all code" size="28">
   </div>
   <div id="searchResults" class="problems"></div>
-  <div id="problems" class="problems"></div>
-  <div id="edMount" class="codewrap">
-    <div id="edView" class="codeview"><div id="edRows" class="coderows"></div></div>
-    <div id="edEdit" class="editwrap"><div id="edGutter" class="editgutter"></div><textarea id="editArea" spellcheck="false"></textarea></div>
+  <div class="codebody">
+    <aside class="secnav">
+      <input id="secFilter" type="text" placeholder="filter sections" aria-label="Filter sections">
+      <div id="secCount" class="seccount"></div>
+      <div id="secNav" class="seclist"></div>
+    </aside>
+    <div id="edMount" class="codewrap">
+      <div id="edView" class="codeview"><div id="edRows" class="coderows"></div></div>
+      <div id="edEdit" class="editwrap"><div id="edGutter" class="editgutter"></div><textarea id="editArea" spellcheck="false"></textarea></div>
+    </div>
   </div>
+  <div id="problems" class="problems"></div>
 </section>
 
 <section id="tab-struct" class="view">
+  <div class="toolbar">
+    <span class="viewtitle">File structure</span>
+    <span class="spacer"></span>
+    <input id="misFilter" type="text" placeholder="filter missions / models" size="26">
+  </div>
   <div class="scroll"><div id="structRoot"><div class="card">Open a main.scm file to inspect its structure.</div></div></div>
 </section>
 
 <section id="tab-opcodes" class="view">
   <div class="toolbar">
-    <input id="opSearch" type="text" placeholder="search opcode name or hex id (e.g. 00D6)" size="40">
+    <span class="viewtitle">Opcode database</span>
+    <input id="opSearch" type="text" placeholder="search name or hex id (e.g. 00D6)" size="40">
   </div>
   <div class="scroll">
-    <div id="opDetail" class="opdetail" style="display:none"></div>
-    <div id="opList"></div>
+    <div class="opwrap">
+      <div id="opList" class="oplist"></div>
+      <div id="opDetail" class="opdetail" style="display:none"></div>
+    </div>
   </div>
 </section>
 
 <section id="tab-hex" class="view">
   <div class="toolbar">
+    <span class="viewtitle">Hex dump</span>
     <select id="hexRegion"></select>
     <input id="hexPage" type="number" min="0" value="0" style="width:70px" title="page number">
     <span id="hexPageInfo" class="status"></span>
@@ -86,7 +107,7 @@ split into HEADER / MAIN / MISSION sections. <i>Open source</i> restores a previ
 source text, including your edits.</li>
 <li><b>Edit</b>: pick a section, press <b>Edit</b> (or double-click the code), type, press
 <b>Edit/Done</b> or <kbd>Esc</kbd> to return to the readable view. Edited sections are marked
-with ● in the picker.</li>
+with ● in the section navigator.</li>
 <li><b>Assemble</b> (or <kbd>Ctrl+S</kbd>): builds one binary from all sections. Errors appear
 in the problem list — click one to jump to the line.</li>
 <li><b>Save</b>: <i>Save .scm</i> downloads the assembled game file; <i>Save source</i>
@@ -156,6 +177,14 @@ PC main.scm (1,269,133 bytes, 97 missions).</p>
 </div>
 </section>
 </main>
+
+<footer id="statusbar">
+  <span id="asmState"><span class="warn">not assembled</span></span>
+  <span class="sep"></span>
+  <span id="fileMeta" class="status">no file loaded</span>
+  <span class="spacer"></span>
+  <span class="status dim">static site &bull; runs offline</span>
+</footer>
 
 <div id="errBanner"></div>
 <div id="toast" class="toast"></div>
