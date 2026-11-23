@@ -57,6 +57,8 @@ node test/smoke_ui.js    # headless UI: drives the real app against main.scm —
 | `js/app.js` | browser wiring: views, assembly flow, problems, downloads |
 | `tools/build_db.py` | regenerates `js/opcodes.js` from `tools/ref/` |
 | `tools/build_symbols.js` | regenerates `js/symbols.js` from `main.scm` |
+| `tools/scm_to_cs.js` | translates missions 0-2 to the C# flavour sketch |
+| `csharp/Missions0_2.cs` | generated C# flavour sketch: INITIAL/INTRO/HOTEL |
 | `tools/ref/` | database inputs (gta3sc gtavc XMLs + licence) |
 | `test/` | engine tests + headless UI smoke test |
 | `main.scm` | retail Vice City PC script (bundled test target) |
