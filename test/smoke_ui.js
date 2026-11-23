@@ -52,11 +52,21 @@ function makeEl(tag, id) {
 const scmBuf = fs.readFileSync(path.join(ROOT, "main.scm"));
 const scmAB = scmBuf.buffer.slice(scmBuf.byteOffset, scmBuf.byteOffset + scmBuf.byteLength);
 
+// IDs that really exist: parsed from index.html (+ dynamic IDs the app creates).
+const htmlIds = {};
+fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/ id="([^"]+)"/g, (m, id) => {
+  htmlIds[id] = true; return m;
+});
+["btnOpInsert"].forEach((id) => { htmlIds[id] = true; });
+
 const ids = {};
 const documentStub = {
   readyState: "complete",
   _listeners: {},
-  getElementById(id) { return ids[id] || (ids[id] = makeEl("div", id)); },
+  getElementById(id) {
+    if (!htmlIds[id]) return null; // faithful: unknown IDs are null, like a browser
+    return ids[id] || (ids[id] = makeEl("div", id));
+  },
   createElement(tag) { return makeEl(tag); },
   addEventListener(t, fn) { (this._listeners[t] = this._listeners[t] || []).push(fn); },
   body: makeEl("body")
