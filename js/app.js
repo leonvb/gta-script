@@ -753,13 +753,15 @@ function renderHexPage() {
   $("hexPageInfo").textContent = "page " + (pg + 1) + " / " + pages;
   $("hexLbl").innerHTML = "bytes <b>" + (r.from + pg * 4096) + "</b> .. <b>" +
     Math.min(r.to - 1, r.from + pg * 4096 + 4095) + "</b>" + (S.asm ? " (assembled)" : "");
+  var wide = $("hexDump").clientWidth || 800;
+  var perRow = wide < 620 ? 8 : 16;
   var from = r.from + pg * 4096, to = Math.min(r.to, from + 4096);
   var html = "";
-  for (var a = from - (from % 16); a < to; a += 16) {
+  for (var a = from - (from % perRow); a < to; a += perRow) {
     html += '<div class="hrow"><span class="ha">' + ("00000000" + a.toString(16)).slice(-8) +
       ": </span>";
     var asc = "";
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < perRow; i++) {
       var off = a + i;
       if (off < from || off >= to) { html += '<span class="hb dim">..</span>'; asc += " "; }
       else {
@@ -776,6 +778,7 @@ function renderHexPage() {
 /* ------------------------------ boot/wire ----------------------------- */
 
 function switchTab(name) {
+  document.body.classList.remove("nav-open");
   var tabs = $("tabs").querySelectorAll("button[data-tab]");
   for (var i = 0; i < tabs.length; i++) {
     setActive(tabs[i], getData(tabs[i], "tab") === name);
@@ -823,6 +826,13 @@ function wire() {
   $("secNav").addEventListener("click", function (e) {
     var b = closestEl(e.target, "button", "data-sec");
     if (b) showSection(getData(b, "sec"), true);
+    document.body.classList.remove("nav-open");
+  });
+  $("btnNav").addEventListener("click", function () {
+    document.body.classList.toggle("nav-open");
+  });
+  $("navBackdrop").addEventListener("click", function () {
+    document.body.classList.remove("nav-open");
   });
   $("secFilter").addEventListener("input", function () { rebuildSecNav(); });
   $("searchInput").addEventListener("input", runSearch);
@@ -841,6 +851,15 @@ function wire() {
   $("hexRegion").addEventListener("change", function () { $("hexPage").value = 0; renderHexPage(); });
   $("hexPage").addEventListener("input", renderHexPage);
   $("misFilter").addEventListener("input", applyMisFilter);
+  if (typeof window !== "undefined" && window.addEventListener) {
+    var rszT = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(rszT);
+      rszT = setTimeout(function () {
+        if ($("tab-hex").classList.contains("active")) renderHexPage();
+      }, 250);
+    });
+  }
   buildOpList();
 }
 
