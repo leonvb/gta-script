@@ -41,6 +41,8 @@
     <button id="btnNav" title="Show section list">&#9776; Sections</button>
     <button id="btnEdit" title="Toggle edit mode for this section">Edit</button>
     <button id="btnSym" class="ghost" title="Show friendly variable names instead of raw $offsets (click a name to rename it)">Names: on</button>
+    <button id="btnNamesExport" class="ghost" title="Download my renamed variables as a JSON file -- import it on another browser or computer">Export names</button>
+    <button id="btnNamesImport" class="ghost" title="Load renamed variables from a JSON file">Import names</button>
     <span id="edStatus" class="status"></span>
     <span class="spacer"></span>
     <input id="searchInput" type="text" placeholder="search all code" size="28">
@@ -159,6 +161,12 @@ the editor and assembler keep working with <code>$offsets</code>, so renaming ca
 never break your build. A <code>names ~</code> badge means the loaded file differs
 from the retail script the names were built from — most still apply, but treat
 them as approximate.</p>
+<p>Your renames live in the browser's local storage. <b>Export names</b> (toolbar, or
+inside the rename dialog) downloads them as a small <code>vcscm_names.json</code>
+file: keep it as a backup, mail it to yourself, or copy it to another computer,
+then <b>Import names</b> there to get the same names back. The file remembers which
+game file the names were made for, and the editor tells you if you import it while
+a different file is loaded.</p>
 
 <h3>4. Opcodes view</h3>
 <p>Search the full 1,424-opcode database by name or hex id (e.g. <code>00D6</code>). Clicking
@@ -217,7 +225,8 @@ PC main.scm (1,269,133 bytes, 97 missions).</p>
       <button id="symCancel">Cancel</button>
     </div>
     <p class="fine">Names are a display layer only: editing and assembling still use
-    <code>$offsets</code>. Your names stay in this browser.</p>
+    <code>$offsets</code>. Your names stay in this browser -- Export moves them to
+    another browser or computer.</p>
   </div>
 </div>
 <div id="errBanner"></div>
