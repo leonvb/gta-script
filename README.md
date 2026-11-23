@@ -43,7 +43,7 @@ python3 -m http.server 8080
 ## Tests
 
 ```sh
-node test/run_tests.js   # engine + symbols — 138 tests
+node test/run_tests.js   # engine + symbols — 143 tests
 node test/smoke_ui.js    # headless UI: drives the real app against main.scm — 107 tests
 ```
 

@@ -143,6 +143,9 @@ downloads the text so you can keep working later.</li>
 auto-sizes the globals block from the highest <code>$N</code> you use.</li>
 <li><b>Locals</b> are <code>0@</code> … <code>15@</code>, plus timers <code>16@</code>,
 <code>17@</code>. Each script has its own locals.</li>
+<li><b>Floats</b> print rounded to the fewest decimals that still assemble to the exact
+same bytes (<code>1999.92</code>, <code>0.3</code>, <code>100.0</code>) — what you see is
+what the game gets, bit for bit.</li>
 <li><b>Labels</b>: define with <code>:NAME</code>, use with <code>@NAME</code>. Labels live
 inside one section — never jump between missions.</li>
 <li><b>Opcodes</b> may be written with or without the hex prefix: <code>WAIT 0</code> and

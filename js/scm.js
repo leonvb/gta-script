@@ -149,19 +149,34 @@ Writer.prototype.result = function () {
 
 /* ============================ text formatting ========================== */
 
-// Shortest string that round-trips through float32 (Number.toString is shortest
-// round-trip for float64, and float64 holds every float32 value exactly).
+// Decimal text for a float32 value, rounded to the fewest decimals that still
+// parse back (float64 parse + float32 canonicalization, exactly like the
+// assembler's fnum path) to the identical float32 bits. Every candidate is
+// verified, never assumed: 1999.920043 prints as 1999.92, 0.30000001 as 0.3.
+// Whole values keep a ".0" suffix so they still read as floats. Extremes that
+// no short decimal captures fall back to the shortest float64 round-trip
+// (exponent form), always bit-exact since float64 holds every float32 exactly.
+var _ffDV = typeof DataView === "function" ? new DataView(new ArrayBuffer(4)) : null;
+function _ffBits(f) { _ffDV.setFloat32(0, f, true); return _ffDV.getUint32(0, true); }
 function formatFloat(f) {
   if (typeof f !== "number") f = 0;
-  var s;
-  if (isNaN(f)) s = "NaN";
-  else if (!isFinite(f)) s = f > 0 ? "Infinity" : "-Infinity";
-  else {
-    s = String(f);
-    if (s.indexOf(".") < 0 && s.indexOf("e") < 0 && s.indexOf("E") < 0 &&
-        s.indexOf("n") < 0 && s.indexOf("N") < 0) s += ".0";
+  if (isNaN(f)) return "NaN";
+  if (!isFinite(f)) return f > 0 ? "Infinity" : "-Infinity";
+  if (f === 0) return "0.0";
+  var target = _ffBits(f);
+  var sign = f < 0 ? "-" : "";
+  var a = f < 0 ? -f : f;
+  if (a < 1e21) {
+    for (var d = 0; d <= 17; d++) {
+      var s = sign + a.toFixed(d);
+      if (d === 0) s += ".0";
+      _ffDV.setFloat32(0, parseFloat(s), true);
+      if (_ffDV.getUint32(0, true) === target) return s;
+    }
   }
-  return s;
+  var fb = String(f);
+  if (fb.indexOf(".") < 0 && fb.indexOf("e") < 0 && fb.indexOf("E") < 0) fb += ".0";
+  return fb;
 }
 
 function isPrintAscii(c) { return c >= 0x20 && c <= 0x7E; }
