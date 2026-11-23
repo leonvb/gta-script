@@ -368,6 +368,113 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   await tick(100);
   ok((ids.asmState.innerHTML || "").indexOf("assembled") >= 0, "repaired source assembles");
 
+  console.log("== editing aids: highlight ==");
+  ok(HL("BOGUS_OPCODE @FOO").indexOf("t-opunk") >= 0, "unknown opcode marked red");
+  ok(HL("0001: WAIT 0").indexOf("t-opunk") < 0, "known opcode not marked");
+  ok(HL(":MY_LABEL").indexOf("t-opunk") < 0, "label def not marked");
+  ok(HL(":FOO WAIT 0").indexOf("t-opunk") < 0, "label + opcode not marked");
+  ok(HL("NOT 00E1: IS_BUTTON_PRESSED 0 16").indexOf("t-opunk") < 0, "NOT form not marked");
+  ok(HL("DEFINE MISSIONS 97").indexOf("t-opunk") < 0, "directive not marked");
+  ok(HL("A4 03 11 FF").indexOf("t-opunk") < 0, "hex data not marked");
+  ok(HL("0002: GOTO @FOO").indexOf('data-lab="FOO"') >= 0, "label refs carry jump data");
+  const WA = sandbox.Editor.wordAt, ML = sandbox.Editor.matchList;
+  let w = WA("0002: GOTO @MY_LA", 15);
+  ok(w.sigil === "@" && w.word === "MY_" && w.a === 12, "wordAt label context", JSON.stringify(w));
+  w = WA("0004: $9", 8);
+  ok(w.sigil === "$" && w.word === "9", "wordAt global context", JSON.stringify(w));
+  ok(ML(["WAIT", "WARP", "GOTO"], "WA", 12).join(",") === "WAIT,WARP", "matchList prefix rank");
+  ok(ML(["WAIT", "CREATE_CAR"], "CAR", 12).join(",") === "CREATE_CAR", "matchList substring fallback");
+
+  console.log("== editing aids: completion & sig hint ==");
+  gotoSection("main");
+  fire("btnEdit", "click");
+  const mainOrig = ids.editArea.value;
+  ok(mainOrig.length > 500000, "main section text staged (" + mainOrig.length + " chars)");
+  ids.editArea.value = "CREA";
+  ids.editArea.selectionStart = 4; ids.editArea.selectionEnd = 4;
+  fire("editArea", "input");
+  ok(ids.edComp.style.display === "block" && ids.edComp.innerHTML.indexOf("CREATE_") >= 0,
+    "completion offers opcodes", ids.edComp.innerHTML.slice(0, 120));
+  fire("editArea", "keydown", { key: "Enter", preventDefault() {} });
+  ok(ids.editArea.value.indexOf("CREATE_") === 0 && ids.edComp.style.display === "none",
+    "Enter accepts completion", JSON.stringify(ids.editArea.value.slice(0, 40)));
+  ids.editArea.value = "0004: $9";
+  ids.editArea.selectionStart = 8; ids.editArea.selectionEnd = 8;
+  fire("editArea", "input");
+  ok(ids.edComp.innerHTML.indexOf(">92<") >= 0 && ids.edComp.innerHTML.indexOf("int<") >= 0,
+    "$ completion shows offsets with names", ids.edComp.innerHTML.slice(0, 160));
+  fire("editArea", "keydown", { key: "Escape", preventDefault() {} });
+  ok(ids.edComp.style.display === "none", "Escape dismisses completion");
+  ids.editArea.value = ":MY_HOME\n0002: GOTO @MY_H";
+  ids.editArea.selectionStart = 24; ids.editArea.selectionEnd = 24;
+  fire("editArea", "input");
+  ok(ids.edComp.innerHTML.indexOf("MY_HOME") >= 0, "@ completion shows section labels");
+  ids.editArea.value = "014B: CREATE_CARGEN";
+  ids.editArea.selectionStart = 19; ids.editArea.selectionEnd = 19;
+  fire("editArea", "input");
+  ok((ids.sigHint.textContent || "").indexOf("CREATE_CARGEN") >= 0, "sig hint describes opcode",
+    (ids.sigHint.textContent || "").slice(0, 90));
+  ids.editArea.value = "WATI 0";
+  ids.editArea.selectionStart = 6; ids.editArea.selectionEnd = 6;
+  fire("editArea", "input");
+  ok((ids.sigHint.textContent || "").indexOf("did you mean WAIT") >= 0, "sig hint suggests fixes",
+    (ids.sigHint.textContent || "").slice(0, 90));
+
+  console.log("== editing aids: live check ==");
+  ids.editArea.value = ":MY_HOME\n0002: GOTO @MY_HOME\nBOGUS_OPCODE @FOO\n";
+  ids.editArea.selectionStart = 43; ids.editArea.selectionEnd = 43;
+  fire("editArea", "input");
+  await tick(900);
+  ok(ids.edGutter.innerHTML.indexOf("mk-err") >= 0, "live check marks the bad line");
+  ok((ids.edStatus.textContent || "").indexOf("live issue") >= 0, "status counts live issues",
+    (ids.edStatus.textContent || "").slice(0, 120));
+  ids.editArea.value = ":MY_HOME\n0002: GOTO @MY_HOME\n0001: WAIT 0\n";
+  fire("editArea", "input");
+  await tick(900);
+  ok(ids.edGutter.innerHTML.indexOf("mk-err") < 0, "repaired line clears the mark");
+  ok((ids.edStatus.textContent || "").indexOf("live issue") < 0, "status clears with it");
+  ids.editArea.value = mainOrig;
+  fire("btnEdit", "click"); // Done: identical text, section restored
+
+  console.log("== editing aids: label jump, goto, snippets ==");
+  gotoSection("main");
+  const rowL = { nodeType: 1, className: "coderow", parentNode: null,
+    getAttribute(k) { return k === "data-ln" ? "5" : null; } };
+  const spanMiss = { nodeType: 1, parentNode: rowL,
+    getAttribute(k) { return k === "data-lab" ? "NOPE_XYZ" : null; } };
+  fire("edRows", "click", { target: spanMiss });
+  ok((ids.toast.textContent || "").indexOf("not defined") >= 0, "missing label toasts");
+  const spanMain = { nodeType: 1, parentNode: rowL,
+    getAttribute(k) { return k === "data-lab" ? "MAIN" : null; } };
+  ids.edView.scrollTop = 5000;
+  fire("edRows", "click", { target: spanMain });
+  ok(ids.edView.scrollTop === 0, "label click jumps to :MAIN");
+  ids.gotoInput.value = "100";
+  fire("gotoInput", "keydown", { key: "Enter" });
+  ok(ids.edView.scrollTop === 99 * 19 - 200, "goto input jumps to line 100",
+    "got " + ids.edView.scrollTop);
+  fire("btnSnippets", "click");
+  ok(ids.snipMenu.style.display === "block", "snippet menu opens");
+  const fakeSnip = { dataset: { sn: "1" }, _l: {},
+    addEventListener(t, fn) { this._l[t] = fn; } };
+  ids.snipMenu.querySelectorAll = () => [fakeSnip];
+  fire("btnSnippets", "click"); // close
+  fire("btnSnippets", "click"); // reopen: binds the stub
+  fakeSnip._l.click.call(fakeSnip);
+  ok((ids.toast.textContent || "").indexOf("Snippet inserted") >= 0, "snippet inserts",
+    ids.toast.textContent.slice(0, 80));
+  ok(ids.snipMenu.style.display === "none", "menu closes after insert");
+  ok((ids.fileBadge.innerHTML || "").indexOf("edited") >= 0, "insert marks section dirty");
+  fire("btnEdit", "click"); // restore MAIN: strip the appended snippet lines
+  const withSnip = ids.editArea.value;
+  const cut = withSnip.lastIndexOf("\n:MY_WAIT\n");
+  ok(cut > 0, "appended snippet located (" + withSnip.length + " chars)");
+  ids.editArea.value = withSnip.slice(0, cut);
+  fire("btnEdit", "click");
+  fire("btnBuild", "click");
+  await tick(100);
+  ok((ids.asmState.innerHTML || "").indexOf("assembled") >= 0, "restored source assembles");
+
   console.log("== downloads & keys ==");
   fire("btnDlSrc", "click");
   fire("btnDlScm", "click");

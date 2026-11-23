@@ -40,11 +40,15 @@
   <div class="toolbar">
     <button id="btnNav" title="Show section list">&#9776; Sections</button>
     <button id="btnEdit" title="Toggle edit mode for this section">Edit</button>
+    <button id="btnSnippets" title="Insert a code snippet (IF/ELSE, wait loop, ...) at the cursor">Snippets</button>
+    <div id="snipMenu" class="snipmenu" style="display:none"></div>
     <button id="btnSym" class="ghost" title="Show friendly variable names instead of raw $offsets (click a name to rename it)">Names: on</button>
     <button id="btnNamesExport" class="ghost" title="Download my renamed variables as a JSON file -- import it on another browser or computer">Export names</button>
     <button id="btnNamesImport" class="ghost" title="Load renamed variables from a JSON file">Import names</button>
     <span id="edStatus" class="status"></span>
+    <span id="sigHint" class="status sighint" title=""></span>
     <span class="spacer"></span>
+    <input id="gotoInput" type="text" inputmode="numeric" placeholder="go to line" title="Go to a line in this section (Enter)">
     <input id="searchInput" type="text" placeholder="search all code" size="28">
   </div>
   <div id="searchResults" class="problems"></div>
@@ -58,6 +62,7 @@
     <div id="edMount" class="codewrap">
       <div id="edView" class="codeview"><div id="edRows" class="coderows"></div></div>
       <div id="edEdit" class="editwrap"><div id="edGutter" class="editgutter"></div><textarea id="editArea" spellcheck="false"></textarea></div>
+      <div id="edComp" class="edcomp" style="display:none"></div>
     </div>
   </div>
   <div id="problems" class="problems"></div>
@@ -178,7 +183,28 @@ an opcode shows every argument with its type, description, enum and rules — th
 largest mission (limit 35,000), mission count, object list and global usage. Bars turn red
 when a limit is exceeded — the game will not load such a file.</p>
 
-<h3>6. Things to know</h3>
+<h3>6. Editing aids</h3>
+<ul>
+<li><b>Autocomplete</b>: while editing, just start typing and pick from the list
+(<kbd>Tab</kbd>/<kbd>Enter</kbd> accepts, <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> move,
+<kbd>Esc</kbd> dismisses, <kbd>Ctrl+Space</kbd> forces it open). After
+<code>$</code> you get global offsets with their names, after <code>@</code> the
+labels in this section, after <code>#</code> model names, anywhere else opcode
+names and keywords.</li>
+<li><b>Signature hint</b>: the toolbar shows the opcode on your line with every
+argument (hover for details). An unknown name gets a "did you mean ...?"
+suggestion instead.</li>
+<li><b>Live check</b>: a moment after you stop typing, problem lines are marked
+in the gutter — red for errors, yellow for warnings. Hover a mark for the
+message. Assemble is still the final word.</li>
+<li><b>Label jump</b>: click any <code>@label</code> in the code view to jump to
+its definition. Unknown opcode names are shown in red.</li>
+<li><b>Snippets</b>: the toolbar button inserts ready-made IF/ELSE, wait-loop,
+GOSUB, mission-start and named-global skeletons at the cursor.</li>
+<li><b>Go to line</b>: the toolbar box jumps straight to a line number.</li>
+</ul>
+
+<h3>7. Things to know</h3>
 <ul>
 <li>Mission order in the file decides the mission numbers — do not reorder or delete
 <code>//== SECTION: MISSION n ==</code> headers.</li>
@@ -190,7 +216,7 @@ truncated with a warning.</li>
 are used as-is — match the count the original line had.</li>
 </ul>
 
-<h3>7. References</h3>
+<h3>8. References</h3>
 <ul>
 <li><a href="https://gtamods.com/wiki/SCM_language">SCM language reference (GTAMods Wiki)</a></li>
 <li><a href="https://github.com/thelink2012/gta3sc">gta3sc — opcode database source</a></li>

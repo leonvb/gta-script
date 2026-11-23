@@ -16,6 +16,7 @@ var S = {
   problems: [],
   cur: "main",
   editing: false,
+  liveMarks: null,
   opDetail: null,
   hexBytes: null,
   hexRegions: [],
@@ -211,6 +212,8 @@ function loadBytesNow(name, u8) {
   S.problems = dis.warnings.map(function (w) { return { kind: "warn", line: 0, msg: w }; });
   S.cur = "main";
   S.editing = false;
+  S.liveMarks = null;
+  MAIN_LABELS = null; NAMED_GLOBALS = null; MODEL_NAMES = null;
   $("btnEdit").textContent = "Edit";
   // symbol names were built for the retail main.scm: flag a different file
   S.sym.fileHash = fnv1a(u8);
@@ -266,6 +269,8 @@ function loadSourceFile(name, text) {
   S.problems = [];
   S.sym.match = null; // no binary to compare: names apply as-is
   S.sym.fileHash = null; // unknown bytes: exports carry no fingerprint
+  S.liveMarks = null;
+  MAIN_LABELS = null; NAMED_GLOBALS = null; MODEL_NAMES = null;
   S.cur = secs[0].id;
   S.editing = false;
   $("btnEdit").textContent = "Edit";
@@ -357,12 +362,19 @@ function showSection(id, force) {
   ed.setMode("view");
   ed.setLines(sec.lines);
   updateEdStatus();
+  renderMarks();
+  updateSigHint();
 }
 
 function updateEdStatus() {
   var sec = curSec();
+  var live = "";
+  if (sec && S.liveMarks && S.liveMarks.sec === sec.id) {
+    var n = Object.keys(S.liveMarks.marks).length;
+    if (n) live = " \u2022 " + n + " live issue" + (n > 1 ? "s" : "");
+  }
   $("edStatus").textContent = sec ? (sec.title + " -- " + sec.lines.length + " lines -- " +
-    (S.editing ? "EDITING (Esc: view, Ctrl+S: assemble)" : "view (double-click a line to edit)")) : "";
+    (S.editing ? "EDITING (Esc: view, Ctrl+S: assemble)" : "view (double-click a line to edit)") + live) : "";
 }
 
 function gotoGlobalLine(g) {
@@ -382,12 +394,15 @@ function setEditing(on) {
   } else if (!on && S.editing) {
     applyEdit();
     S.editing = false;
+    S.liveMarks = null; // live marks only exist while editing
     ed.setMode("view");
     $("btnEdit").textContent = "Edit";
     rebuildSecNav();
     refreshBadge();
   }
   updateEdStatus();
+  renderMarks();
+  updateSigHint();
 }
 
 function runSearch() {
@@ -434,6 +449,362 @@ function runSearch() {
 function secTitle(id) {
   var s = secById(id);
   return s ? s.title : id;
+}
+
+/* ------------------------- editing aids --------------------------- */
+// completion sources, signature hints, live checking, label jump, snippets
+
+var OP_ALPHA = null;   // [{text, detail}] opcodes, alphabetical (static DB)
+var MAIN_LABELS = null;  // main-section label names (upper), per loaded file
+var NAMED_GLOBALS = null; // VAR_INT/VAR_FLOAT names from HEADER
+var MODEL_NAMES = null;  // level models + database models, sorted
+
+function opAlpha() {
+  if (!OP_ALPHA) {
+    OP_ALPHA = SCM.commandList().map(function (c) {
+      return { text: c.name, detail: idh4(c.id) };
+    }).sort(function (a, b) { return a.text < b.text ? -1 : a.text > b.text ? 1 : 0; });
+  }
+  return OP_ALPHA;
+}
+function sectionLabels(sec) {
+  var out = [], seen = {};
+  if (!sec) return out;
+  for (var i = 0; i < sec.lines.length; i++) {
+    var t = sec.lines[i].trim();
+    if (t.charAt(0) !== ":") continue;
+    var nm = t.slice(1).split(/[\s,]/)[0];
+    if (nm && !seen[nm.toUpperCase()]) { seen[nm.toUpperCase()] = 1; out.push(nm); }
+  }
+  return out;
+}
+function labelsFromText(text) {
+  return sectionLabels({ lines: String(text).split(/\r\n|\r|\n/) });
+}
+function mainLabelNames() {
+  if (!MAIN_LABELS) {
+    MAIN_LABELS = sectionLabels(secById("main")).map(function (n) { return n.toUpperCase(); });
+  }
+  return MAIN_LABELS;
+}
+// code part of one line (quote-aware // strip)
+function stripLineComment(line) {
+  var inStr = false;
+  for (var i = 0; i < line.length - 1; i++) {
+    var c = line.charAt(i);
+    if (inStr) { if (c === "\\") i++; else if (c === "'") inStr = false; }
+    else if (c === "'") inStr = true;
+    else if (c === "/" && line.charAt(i + 1) === "/") return line.slice(0, i);
+  }
+  return line;
+}
+function namedGlobals() {
+  if (!NAMED_GLOBALS) {
+    NAMED_GLOBALS = [];
+    var lines = null;
+    if (S.cur === "header" && S.editing && ed) lines = ed.getText().split(/\r\n|\r|\n/);
+    else if (secById("header")) lines = secById("header").lines;
+    if (lines) {
+      for (var i = 0; i < lines.length; i++) {
+        var m = /^\s*VAR_(?:INT|FLOAT)\s+(.+)$/i.exec(stripLineComment(lines[i]));
+        if (!m) continue;
+        var parts = m[1].split(/[\s,]+/);
+        for (var k = 0; k < parts.length; k++) {
+          var nm = parts[k].replace(/^\$/, "");
+          if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(nm)) NAMED_GLOBALS.push(nm);
+        }
+      }
+    }
+  }
+  return NAMED_GLOBALS;
+}
+function modelNames() {
+  if (!MODEL_NAMES) {
+    var seen = {}, out = [];
+    if (S.header && S.header.models) {
+      for (var i = 0; i < S.header.models.length; i++) {
+        var m = S.header.models[i];
+        if (m && !seen[m]) { seen[m] = 1; out.push(m); }
+      }
+    }
+    if (typeof VC_DB !== "undefined" && VC_DB && VC_DB.models) {
+      Object.keys(VC_DB.models).forEach(function (k) {
+        if (!seen[k]) { seen[k] = 1; out.push(k); }
+      });
+    }
+    out.sort();
+    MODEL_NAMES = out;
+  }
+  return MODEL_NAMES;
+}
+
+var COMP_KEYWORDS = ["DEFINE", "OBJECTS", "OBJECT", "MISSIONS", "MISSION", "AT",
+  "GLOBAL_SPACE", "VAR_INT", "VAR_FLOAT", "HEX", "END", "NOT", "TIMERA", "TIMERB"];
+
+// completion source: (word, sigil, wordStart, fullText) -> [{text, detail}]
+function completeWord(word, sigil, wordStart, fullText) {
+  if (sigil === ":") return null; // defining a label: nothing to offer
+  if (sigil === "$") {
+    if (/^\d*$/.test(word)) {
+      var items = [];
+      if (SYM) {
+        var offs = Object.keys(SYM.G).filter(function (k) { return k.indexOf(word) === 0; });
+        offs.sort(function (a, b) { return a.length - b.length || (+a - +b); });
+        for (var i = 0; i < offs.length && items.length < 12; i++) {
+          var e = SYM.entry(+offs[i]);
+          var nm = (S.sym.overrides[offs[i]] !== undefined) ? S.sym.overrides[offs[i]] : e.name;
+          items.push({ text: offs[i], detail: nm + " " + (e.t === "F" ? "float" : "int") });
+        }
+      }
+      return items;
+    }
+    var out = [], ups = namedGlobals();
+    for (var n = 0; n < ups.length && out.length < 12; n++) {
+      if (ups[n].toUpperCase().indexOf(word.toUpperCase()) === 0) {
+        out.push({ text: ups[n], detail: "named global" });
+      }
+    }
+    return out;
+  }
+  if (sigil === "@") {
+    if (!word) return null;
+    return Editor.matchList(labelsFromText(S.editing && ed ? ed.getText() : "").map(function (n) {
+      return { text: n, detail: "label" };
+    }), word, 12);
+  }
+  if (sigil === "#") {
+    if (!word) return null;
+    return Editor.matchList(modelNames().map(function (n) {
+      return { text: n, detail: "model" };
+    }), word, 12);
+  }
+  if (!word) return null;
+  // opcode position (after NOT / XXXX:) offers opcodes only, else keywords too
+  var before = String(fullText).slice(0, wordStart).split("\n").pop();
+  var opOnly = /(^|\s)(NOT\s+)?[0-9A-Fa-f]{4}:\s*$/.test(before) || /(^|\s)NOT\s*$/i.test(before);
+  var list = opAlpha();
+  if (!opOnly) {
+    list = list.concat(COMP_KEYWORDS.map(function (k) { return { text: k, detail: "keyword" }; }));
+  }
+  return Editor.matchList(list, word, 12);
+}
+
+function levenshtein(a, b) {
+  a = String(a); b = String(b);
+  if (a === b) return 0;
+  var d = [], i, j;
+  for (i = 0; i <= a.length; i++) d[i] = [i];
+  for (j = 0; j <= b.length; j++) d[0][j] = j;
+  for (i = 1; i <= a.length; i++) {
+    for (j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1,
+        d[i - 1][j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+    }
+  }
+  return d[a.length][b.length];
+}
+function suggestOp(word) {
+  var up = String(word).toUpperCase(), best = null, bd = 99;
+  var names = opAlpha();
+  for (var i = 0; i < names.length; i++) {
+    var t = names[i].text;
+    if (Math.abs(t.length - up.length) > 3) continue;
+    var d = levenshtein(up, t);
+    if (d < bd) { bd = d; best = t; }
+  }
+  return bd <= 3 ? best : null;
+}
+var SIG_DIRS = { DEFINE: 1, OBJECTS: 1, OBJECT: 1, MISSIONS: 1, MISSION: 1, AT: 1,
+  GLOBAL_SPACE: 1, VAR_INT: 1, VAR_FLOAT: 1, HEX: 1, END: 1 };
+function sigForLine(line) {
+  if (typeof VC_DB === "undefined" || !VC_DB) return null;
+  var toks = stripLineComment(line).split(/[\s,]+/).filter(function (t) { return t; });
+  var i = 0;
+  if (toks[i] && toks[i].charAt(0) === ":") i++; // :label + opcode on one line
+  if (toks[i] && toks[i].toUpperCase() === "NOT") i++;
+  var prefix = null;
+  if (toks[i] && /^[0-9A-Fa-f]{4}:$/.test(toks[i])) { prefix = toks[i]; i++; }
+  var cand = toks[i];
+  if (cand && /^[A-Za-z_][A-Za-z0-9_]*$/.test(cand) && !SIG_DIRS[cand.toUpperCase()]) {
+    var id = VC_DB.byName[cand.toUpperCase()];
+    if (id !== undefined) return { id: id };
+    return { unknown: cand };
+  }
+  if (!cand && prefix) { // bare "00D6:" so far: describe the prefixed opcode
+    var pid = parseInt(prefix.slice(0, 4), 16) & 0x7FFF;
+    if (SCM.describeCommand(pid)) return { id: pid };
+  }
+  return null;
+}
+function sigText(d) {
+  var parts = d.args.map(function (a) {
+    var s = (a.desc || typeWord(a.type)) + ":" + typeWord(a.type);
+    if (a.flags & 2) s += "*";
+    return s;
+  });
+  return idh4(d.id) + " " + d.name + (parts.length ? "  " + parts.join("  ") : "");
+}
+function updateSigHint() {
+  var el = $("sigHint");
+  if (!el) return;
+  var txt = "", title = "";
+  if (S.editing && ed) {
+    var s = sigForLine(ed.caretInfo().text);
+    if (s) {
+      if (s.unknown) {
+        var sug = suggestOp(s.unknown);
+        txt = "unknown opcode '" + s.unknown + "'" + (sug ? " -- did you mean " + sug + "?" : "");
+      } else {
+        var d = SCM.describeCommand(s.id);
+        if (d) {
+          txt = sigText(d);
+          title = d.args.map(function (a, i) {
+            return (i + 1) + ". " + typeWord(a.type) + (a.flags & 2 ? " (out)" : "") +
+              (a.desc ? " -- " + a.desc : "");
+          }).join("\n");
+        }
+      }
+    }
+  }
+  el.textContent = txt;
+  el.title = title;
+}
+
+var liveT = null;
+function onCodeEdit() {
+  scheduleLiveCheck();
+  updateSigHint();
+}
+function scheduleLiveCheck() {
+  if (!S.editing) return;
+  clearTimeout(liveT);
+  liveT = setTimeout(runLiveCheck, 700);
+}
+function runLiveCheck() {
+  if (!S.editing || !ed) return;
+  var sec = curSec();
+  if (!sec) return;
+  var res;
+  try {
+    res = SCM.checkSection(ed.getText().split(/\r\n|\r|\n/),
+      sec.id.indexOf("mission:") === 0 ? mainLabelNames() : null);
+  } catch (e) { return; }
+  var marks = {};
+  res.errors.forEach(function (e) { marks[e.line] = { kind: "err", msg: e.msg }; });
+  res.warnings.forEach(function (w) {
+    if (!marks[w.line]) marks[w.line] = { kind: "warn", msg: w.msg };
+  });
+  S.liveMarks = { sec: sec.id, marks: marks };
+  renderMarks();
+  updateEdStatus();
+}
+// merged gutter marks for the current section: assemble problems win,
+// live-check findings fill the gaps
+function marksForCur() {
+  var marks = {};
+  for (var i = 0; i < S.problems.length; i++) {
+    var p = S.problems[i];
+    if (!p.line) continue;
+    var l = locateGlobalLine(p.line);
+    if (l.sec !== S.cur) continue;
+    marks[l.line] = { kind: p.kind === "err" ? "err" : "warn", msg: p.msg };
+  }
+  if (S.liveMarks && S.liveMarks.sec === S.cur) {
+    Object.keys(S.liveMarks.marks).forEach(function (k) {
+      if (!marks[k]) marks[k] = S.liveMarks.marks[k];
+    });
+  }
+  return marks;
+}
+function renderMarks() {
+  if (ed) ed.setLineMarks(marksForCur());
+}
+
+function jumpToLabel(name) {
+  var sec = curSec();
+  if (!sec) return;
+  var up = String(name).toUpperCase();
+  for (var i = 0; i < sec.lines.length; i++) {
+    var t = sec.lines[i].trim();
+    if (t.charAt(0) !== ":") continue;
+    if (t.slice(1).split(/[\s,]/)[0].toUpperCase() === up) {
+      ed.gotoLine(i + 1, true);
+      return;
+    }
+  }
+  toast("@" + name + " is not defined in " + sec.title + ".");
+}
+
+var SNIPPETS = [
+  { name: "IF / ELSE branch", desc: "ANDOR condition with two paths", text:
+    "00D6: ANDOR 0\n00E1: IS_BUTTON_PRESSED 0 16 // your condition here\n" +
+    "004D: GOTO_IF_FALSE @MY_ELSE\n// ... then ...\n0002: GOTO @MY_ENDIF\n" +
+    ":MY_ELSE\n// ... else ...\n:MY_ENDIF" },
+  { name: "Wait loop", desc: "poll every frame until a condition holds", text:
+    ":MY_WAIT\n00D6: ANDOR 0\nNOT 00E1: IS_BUTTON_PRESSED 0 16 // repeat until pressed\n" +
+    "004D: GOTO_IF_FALSE @MY_WAIT_DONE\n0001: WAIT 0\n0002: GOTO @MY_WAIT\n:MY_WAIT_DONE" },
+  { name: "GOSUB subroutine", desc: "call a shared block and return", text:
+    "0050: GOSUB @MY_SUB\n// ... execution continues here after RETURN ...\n" +
+    ":MY_SUB\n// ... subroutine body ...\n0051: RETURN" },
+  { name: "Mission thread start", desc: ":label + SCRIPT_NAME (+ HEADER reminder)", text:
+    "// new mission: also add \"DEFINE MISSION <n> AT @MY_MISSION\" in HEADER\n" +
+    ":MY_MISSION\n03A4: SCRIPT_NAME 'MYMISS'\n0001: WAIT 0" },
+  { name: "Named global", desc: "VAR_INT for HEADER, usable as $name", text:
+    "VAR_INT $my_counter // put this in HEADER; then use $my_counter anywhere" }
+];
+function renderSnipMenu() {
+  var box = $("snipMenu");
+  var html = "";
+  SNIPPETS.forEach(function (sn, i) {
+    html += '<button data-sn="' + i + '"><b>' + escHtml(sn.name) + "</b><small>" +
+      escHtml(sn.desc) + "</small></button>";
+  });
+  box.innerHTML = html;
+  var rows = box.querySelectorAll("button[data-sn]");
+  for (var i = 0; i < rows.length; i++) {
+    rows[i].addEventListener("click", function () {
+      insertSnippet(SNIPPETS[+getData(this, "sn")].text);
+      box.style.display = "none";
+    });
+  }
+}
+// insert text at the caret, keeping the current line intact
+function insertAtCaret(text) {
+  var ta = $("editArea");
+  var v = String(ta.value);
+  var a = (ta.selectionStart === null || ta.selectionStart === undefined) ? v.length : ta.selectionStart;
+  var b = (ta.selectionEnd === null || ta.selectionEnd === undefined) ? a : ta.selectionEnd;
+  var ins = text, pos = a, tail = "";
+  if (a !== b) {
+    pos = a; // replace the selection
+  } else {
+    var ls = v.lastIndexOf("\n", a - 1) + 1, le = v.indexOf("\n", a);
+    if (le < 0) le = v.length;
+    if (v.slice(ls, le).trim() && a !== ls) { pos = le; ins = "\n" + text; } // fresh line below
+    else if (a === ls && a !== le) { tail = "\n"; } // push the line down
+  }
+  ta.value = v.slice(0, pos) + ins + tail + v.slice(b);
+  var p = pos + ins.length + tail.length;
+  try { ta.setSelectionRange(p, p); } catch (e) { /* old browser */ }
+  try { ta.selectionStart = p; ta.selectionEnd = p; } catch (e) { /* ignore */ }
+  if (ta.focus) { try { ta.focus(); } catch (e) { /* ignore */ } }
+}
+function insertSnippet(text) {
+  var sec = curSec();
+  if (!sec) { toast("Open a section first."); return; }
+  if (S.editing) {
+    insertAtCaret(text);
+    S.dirty[sec.id] = true;
+    if (ed) ed.hideComplete();
+    onCodeEdit();
+  } else {
+    sec.lines = sec.lines.concat(text.split("\n"));
+    S.dirty[sec.id] = true;
+    ed.setLines(sec.lines);
+  }
+  rebuildSecNav();
+  refreshBadge();
+  toast("Snippet inserted into " + sec.title + ".");
 }
 
 /* --------------------------- symbol names --------------------------- */
@@ -688,6 +1059,7 @@ function renderProblems() {
       gotoGlobalLine(p.line);
     });
   }
+  renderMarks();
 }
 
 function download(name, u8) {
@@ -1013,8 +1385,10 @@ function switchTab(name) {
 function wire() {
   ed = new Editor.Editor({
     view: $("edView"), rows: $("edRows"), editWrap: $("edEdit"),
-    textarea: $("editArea"), gutter: $("edGutter")
-  }, { onSymbolClick: openSymModal });
+    textarea: $("editArea"), gutter: $("edGutter"), complete: $("edComp")
+  }, { onSymbolClick: openSymModal, onLabelClick: jumpToLabel,
+    onEdit: onCodeEdit, onCaret: updateSigHint });
+  ed.setCompleter(completeWord);
   loadSymPrefs();
   if (!SYM) {
     $("btnSym").style.display = "none";
@@ -1051,6 +1425,28 @@ function wire() {
     });
   });
   $("btnEdit").addEventListener("click", function () { setEditing(!S.editing); });
+  $("btnSnippets").addEventListener("click", function () {
+    var box = $("snipMenu");
+    if (box.style.display === "block") { box.style.display = "none"; return; }
+    renderSnipMenu();
+    box.style.display = "block";
+  });
+  document.addEventListener("click", function (e) {
+    var box = $("snipMenu");
+    if (!box || box.style.display !== "block") return;
+    var t = e.target;
+    while (t && t.nodeType === 1) {
+      if (t === box || t.id === "btnSnippets") return;
+      t = t.parentNode;
+    }
+    box.style.display = "none";
+  });
+  $("gotoInput").addEventListener("keydown", function (e) {
+    var k = e.key || (e.keyCode === 13 ? "Enter" : "");
+    if (k !== "Enter") return;
+    var n = parseInt(this.value, 10);
+    if (n >= 1 && ed) ed.gotoLine(n, true);
+  });
   $("btnSym").addEventListener("click", toggleSymNames);
   $("btnNamesExport").addEventListener("click", exportSymNames);
   $("btnNamesImport").addEventListener("click", function () {

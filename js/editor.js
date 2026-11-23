@@ -58,7 +58,7 @@ function highlight(line) {
   var html = "";
   // tokenize code part
   var re = /('(?:[^'\\]|\\.)*'?|:[A-Za-z0-9_]+|[0-9A-Fa-f]{4}:|[@#$]?[A-Za-z_][A-Za-z0-9_]*|\d+@|0[xX][0-9A-Fa-f]+|\d+\.\d*|\d*\.\d+|\d+|[(),]|\s+|.)/g;
-  var m, first = true;
+  var m, first = true, opSlot = true;
   var db = (typeof VC_DB !== "undefined") ? VC_DB : null;
   var pendingDollar = false, prevEnd = -1;
   function flushDollar() {
@@ -82,7 +82,7 @@ function highlight(line) {
           html += '<span class="gsym sc-' + e.cat + (disp.custom ? " custom" : "") +
             '" data-sym="' + off + '" title="' + esc(symTitle(off, e, disp)) + '">' +
             esc(shown) + "</span>";
-          first = false;
+          first = false; opSlot = false;
           continue;
         }
         flushDollar();
@@ -91,7 +91,7 @@ function highlight(line) {
         pendingDollar = false;
         html += '<span class="t-gvar" title="named global (VAR_INT / VAR_FLOAT)">' +
           esc("$" + t) + "</span>";
-        first = false;
+        first = false; opSlot = false;
         continue;
       } else {
         flushDollar();
@@ -103,11 +103,16 @@ function highlight(line) {
     if (first && t.charAt(0) === ":") cls = "t-labdef";
     else if (/^[0-9A-Fa-f]{4}:$/.test(t)) cls = "t-opnum";
     else if (t.charAt(0) === "'") cls = "t-str";
-    else if (t.charAt(0) === "@") cls = "t-labref";
+    else if (t.charAt(0) === "@") {
+      html += '<span class="t-labref" data-lab="' + esc(t.slice(1).toUpperCase()) +
+        '" title="click to jump to this label">' + esc(t) + "</span>";
+      first = false; opSlot = false;
+      continue;
+    }
     else if (t.charAt(0) === "$" && t.length > 1) {
       html += '<span class="t-gvar" title="named global (VAR_INT / VAR_FLOAT)">' +
         esc(t) + "</span>";
-      first = false;
+      first = false; opSlot = false;
       continue;
     }
     else if (t.charAt(0) === "$") cls = "t-gvar";
@@ -117,12 +122,98 @@ function highlight(line) {
     else if (DIRS[t.toUpperCase()]) cls = "t-dir";
     else if (t.toUpperCase() === "NOT") cls = "t-kw";
     else if (db && db.byName[t.toUpperCase()] !== undefined) cls = "t-opname";
+    else if (db && opSlot && /^[A-Za-z_][A-Za-z0-9_]*$/.test(t) &&
+             !/^[0-9A-Fa-f]+$/.test(t)) cls = "t-opunk";
     html += cls ? '<span class="' + cls + '">' + esc(t) + "</span>" : esc(t);
+    // :label, XXXX: and NOT may precede the opcode; anything else closes the slot
+    opSlot = opSlot && (t.toUpperCase() === "NOT" ||
+      /^[0-9A-Fa-f]{4}:$/.test(t) || (first && t.charAt(0) === ":"));
     first = false;
   }
   if (pendingDollar) flushDollar();
   if (com) html += '<span class="t-com">' + esc(com) + "</span>";
   return html || "&nbsp;";
+}
+
+// identifier-ish word around the caret: the filter text before the caret,
+// the full replace range, and the sigil char in front ($ @ # : or "")
+function wordAt(text, caret) {
+  var v = String(text), pos = Math.max(0, Math.min(v.length, caret | 0));
+  var a = pos, b = pos;
+  while (a > 0 && /[A-Za-z0-9_]/.test(v.charAt(a - 1))) a--;
+  while (b < v.length && /[A-Za-z0-9_]/.test(v.charAt(b))) b++;
+  var sigil = "";
+  if (a > 0) {
+    var c = v.charAt(a - 1);
+    if (c === "$" || c === "@" || c === "#" || c === ":") sigil = c;
+  }
+  return { a: a, b: b, word: v.slice(a, pos), sigil: sigil };
+}
+
+// rank word-list matches: prefix hits first, then substring hits (capped)
+function matchList(list, prefix, max) {
+  max = max || 12;
+  var p = String(prefix).toUpperCase();
+  var pre = [], sub = [], i, t;
+  for (i = 0; i < list.length; i++) {
+    t = typeof list[i] === "string" ? list[i] : list[i].text;
+    var up = String(t).toUpperCase();
+    if (up.indexOf(p) === 0) { if (pre.length < max) pre.push(list[i]); }
+    else if (p && up.indexOf(p) >= 0 && pre.length + sub.length < max) sub.push(list[i]);
+  }
+  return pre.concat(sub).slice(0, max);
+}
+
+// caret position in px relative to the textarea's top-left (padding included,
+// scroll removed), for placing the completion dropdown. The textarea never
+// wraps (white-space:pre), so Y is arithmetic and only the current line is
+// mirrored for X. Never throws (headless/old browsers get a fallback).
+function caretXY(ta) {
+  var done = { top: 20, left: 80 };
+  try {
+    if (typeof document === "undefined" || !document.createElement) return done;
+    var v = String(ta.value);
+    var caret = (ta.selectionStart === null || ta.selectionStart === undefined) ?
+      v.length : ta.selectionStart;
+    var cs = null;
+    if (typeof window !== "undefined" && window.getComputedStyle) {
+      try { cs = window.getComputedStyle(ta, null); } catch (e) { cs = null; }
+    }
+    var padT = 8, padL = 76, lh = 19;
+    try {
+      if (cs) {
+        padT = parseInt(cs.paddingTop, 10) || padT;
+        padL = parseInt(cs.paddingLeft, 10) || padL;
+        lh = parseInt(cs.lineHeight, 10) || lh;
+      }
+    } catch (e) { /* keep defaults */ }
+    var line = 0, i;
+    for (i = 0; i < caret; i++) if (v.charCodeAt(i) === 10) line++;
+    var left = 0;
+    try {
+      var div = document.createElement("div");
+      var st = div.style;
+      st.position = "absolute"; st.visibility = "hidden"; st.top = "0"; st.left = "-9999px";
+      st.whiteSpace = "pre"; st.padding = "0"; st.border = "0";
+      if (cs && cs.font) st.font = cs.font;
+      var lineStart = v.lastIndexOf("\n", caret - 1) + 1;
+      div.textContent = v.slice(lineStart, caret);
+      var span = document.createElement("span");
+      span.textContent = ".";
+      div.appendChild(span);
+      var host = document.body || ta.parentNode;
+      if (host && host.appendChild) {
+        host.appendChild(div);
+        left = span.offsetLeft || 0;
+        if (div.parentNode && div.parentNode.removeChild) div.parentNode.removeChild(div);
+        else if (div.remove) div.remove();
+      }
+    } catch (e) { /* keep left = 0 */ }
+    return {
+      top: padT + line * lh - (ta.scrollTop || 0) + lh + 2,
+      left: padL + left - (ta.scrollLeft || 0)
+    };
+  } catch (e) { return done; }
 }
 
 var ROW_H = 19;
@@ -140,6 +231,17 @@ function closestRow(el) {
   return null;
 }
 function rowNum(row) { return +row.getAttribute("data-ln"); }
+// name of a clicked @label span (walks up to the row; old-browser safe)
+function labName(el, stopAt) {
+  while (el && el.nodeType === 1 && el !== stopAt) {
+    if (el.getAttribute) {
+      var v = el.getAttribute("data-lab");
+      if (v !== null && v !== "") return v;
+    }
+    el = el.parentNode;
+  }
+  return null;
+}
 // offset of a clicked symbol span (walks up to the row; old-browser safe)
 function symOff(el, stopAt) {
   while (el && el.nodeType === 1 && el !== stopAt) {
@@ -163,6 +265,11 @@ function Editor(els, opts) {
   this.mode = "view";
   this.maxW = 0;
   this.raf = 0;
+  this.compBox = els.complete || null;
+  this.compFn = null;
+  this._comp = null;
+  this.lineMarks = {};
+  this._marksKey = "";
   var self = this;
   this.view.addEventListener("scroll", function () {
     if (self.raf) return;
@@ -180,17 +287,81 @@ function Editor(els, opts) {
       self.opts.onSymbolClick(off);
       return;
     }
+    var lab = ev.target ? labName(ev.target, row) : null;
+    if (lab !== null && self.opts.onLabelClick) {
+      self.opts.onLabelClick(lab);
+      return;
+    }
     if (self.opts.onLineClick) self.opts.onLineClick(rowNum(row));
   });
   this.ta.addEventListener("input", function () {
     if (self.opts.onEdit) self.opts.onEdit();
+    self._compRefresh(false);
   });
+  this.ta.addEventListener("keyup", function () {
+    self._compCaretCheck();
+    if (self.opts.onCaret) self.opts.onCaret();
+  });
+  this.ta.addEventListener("click", function () {
+    self._compCaretCheck();
+    if (self.opts.onCaret) self.opts.onCaret();
+  });
+  if (this.compBox) {
+    this.compBox.addEventListener("mousedown", function (ev) {
+      var t = ev.target, box = self.compBox, i;
+      while (t && t !== box) {
+        if (t.getAttribute && t.getAttribute("data-i") !== null) {
+          if (ev.preventDefault) ev.preventDefault();
+          i = +t.getAttribute("data-i");
+          self._compAccept(isNaN(i) ? 0 : i);
+          return;
+        }
+        t = t.parentNode;
+      }
+    });
+    this.compBox.addEventListener("mouseover", function (ev) {
+      var t = ev.target, box = self.compBox;
+      while (t && t !== box) {
+        if (t.getAttribute && t.getAttribute("data-i") !== null) {
+          if (self._comp && +t.getAttribute("data-i") !== self._comp.sel) {
+            self._comp.sel = +t.getAttribute("data-i");
+            self._compRender();
+          }
+          return;
+        }
+        t = t.parentNode;
+      }
+    });
+  }
   this.ta.addEventListener("scroll", function () {
     self.gutter.scrollTop = self.ta.scrollTop;
   });
   this.ta.addEventListener("keydown", function (ev) {
     var k = ev.key || (ev.keyCode === 9 ? "Tab" : ev.keyCode === 27 ? "Escape" :
-      ev.keyCode === 83 ? "s" : "");
+      ev.keyCode === 13 ? "Enter" : ev.keyCode === 38 ? "Up" : ev.keyCode === 40 ? "Down" :
+      ev.keyCode === 83 ? "s" : ev.keyCode === 32 ? " " : "");
+    if (k === "Tab" && self._comp) {
+      ev.preventDefault();
+      self._compAccept(self._comp.sel);
+      return;
+    }
+    if ((k === "Enter" || k === "Up" || k === "Down") && self._comp) {
+      ev.preventDefault();
+      if (k === "Enter") self._compAccept(self._comp.sel);
+      else self._compMove(k === "Up" ? -1 : 1);
+      return;
+    }
+    if (k === "Escape" && self._comp) {
+      if (ev.preventDefault) ev.preventDefault();
+      if (ev.stopPropagation) ev.stopPropagation();
+      self._compHide();
+      return;
+    }
+    if ((ev.ctrlKey || ev.metaKey) && k === " ") {
+      ev.preventDefault();
+      self._compRefresh(true);
+      return;
+    }
     if (k === "Tab") {
       ev.preventDefault();
       if (self.ta.setRangeText) {
@@ -199,6 +370,7 @@ function Editor(els, opts) {
         self.ta.value = self.ta.value + "  ";
       }
       if (self.opts.onEdit) self.opts.onEdit();
+      self._compHide();
     }
     if ((ev.ctrlKey || ev.metaKey) && (k === "s" || k === "S")) {
       ev.preventDefault();
@@ -287,14 +459,149 @@ Editor.prototype.setMode = function (mode) {
 
 Editor.prototype._editRefresh = function () {
   this.ta.value = this.lines.join("\n");
-  var n = this.lines.length, g = "";
-  for (var i = 1; i <= n; i++) g += i + "\n";
-  this.gutter.textContent = g;
+  this._gutterRender();
   this.ta.scrollTop = 0;
   this.gutter.scrollTop = 0;
 };
 
 Editor.prototype.getText = function () { return this.ta.value; };
+
+Editor.prototype.caretInfo = function () {
+  var ta = this.ta, v = String(ta.value);
+  var c = (ta.selectionStart === null || ta.selectionStart === undefined) ? v.length : ta.selectionStart;
+  var start = v.lastIndexOf("\n", c - 1) + 1, end = v.indexOf("\n", c);
+  if (end < 0) end = v.length;
+  var line = 1;
+  for (var i = 0; i < c; i++) if (v.charCodeAt(i) === 10) line++;
+  return { line: line, col: c - start, text: v.slice(start, end) };
+};
+
+Editor.prototype.setCompleter = function (fn) {
+  this.compFn = fn || null;
+  if (!fn) this._compHide();
+};
+Editor.prototype.completeOpen = function () { return !!this._comp; };
+Editor.prototype.hideComplete = function () { this._compHide(); };
+
+Editor.prototype._compRefresh = function (force) {
+  this._compHide();
+  if (!this.compFn || !this.compBox || this.mode !== "edit") return;
+  var ta = this.ta;
+  var caret = (ta.selectionStart === null || ta.selectionStart === undefined) ?
+    ta.value.length : ta.selectionStart;
+  // never complete inside a // comment or a 'text label' (unless forced)
+  var ls = ta.value.lastIndexOf("\n", caret - 1) + 1;
+  var before = ta.value.slice(ls, caret);
+  var inStr = false;
+  for (var i = 0; i < before.length; i++) {
+    var ch = before.charAt(i);
+    if (inStr) { if (ch === "\\") i++; else if (ch === "'") inStr = false; }
+    else if (ch === "'") inStr = true;
+    else if (ch === "/" && before.charAt(i + 1) === "/") return;
+  }
+  if (inStr && !force) return;
+  var w = wordAt(ta.value, caret);
+  if (!force && !w.word && w.sigil !== "$" && w.sigil !== "@" && w.sigil !== "#") return;
+  var items = null;
+  try { items = this.compFn(w.word, w.sigil, w.a, ta.value, caret); } catch (e) { items = null; }
+  if (!items || !items.length) return;
+  this._comp = { items: items.slice(0, 12), sel: 0, a: w.a, b: w.b, caret: caret };
+  this._compRender();
+  this._compPlace();
+};
+
+Editor.prototype._compRender = function () {
+  var c = this._comp;
+  if (!c || !this.compBox) return;
+  var html = "";
+  for (var i = 0; i < c.items.length; i++) {
+    var it = c.items[i];
+    var t = (typeof it === "string") ? it : it.text;
+    var d = (it && it.detail) || "";
+    html += '<div class="edcomp-row' + (i === c.sel ? " sel" : "") + '" data-i="' + i +
+      '"><span class="ct">' + esc(t) + "</span>" +
+      (d ? '<span class="cd">' + esc(d) + "</span>" : "") + "</div>";
+  }
+  this.compBox.innerHTML = html;
+  this.compBox.style.display = "block";
+};
+
+Editor.prototype._compPlace = function () {
+  var box = this.compBox, ta = this.ta;
+  if (!box || !this._comp) return;
+  var p = caretXY(ta);
+  var h = Math.min(this._comp.items.length, 8) * 24 + 8;
+  var wrapH = ta.clientHeight || 400, wrapW = ta.clientWidth || 800;
+  var top = p.top;
+  if (top + h > wrapH && p.top - h - 24 > 0) top = p.top - h - 24;
+  box.style.left = Math.max(4, Math.min(p.left, wrapW - 260)) + "px";
+  box.style.top = Math.max(2, top) + "px";
+};
+
+Editor.prototype._compMove = function (d) {
+  var c = this._comp;
+  if (!c) return;
+  c.sel = (c.sel + d + c.items.length) % c.items.length;
+  this._compRender();
+  var box = this.compBox, y = c.sel * 24;
+  if (box) {
+    if (y < (box.scrollTop || 0)) box.scrollTop = y;
+    else if (y + 24 > (box.scrollTop || 0) + (box.clientHeight || 200)) {
+      box.scrollTop = y + 24 - (box.clientHeight || 200);
+    }
+  }
+};
+
+Editor.prototype._compHide = function () {
+  this._comp = null;
+  if (this.compBox) this.compBox.style.display = "none";
+};
+
+Editor.prototype._compAccept = function (i) {
+  var c = this._comp;
+  if (!c) return;
+  var it = c.items[i];
+  if (it === undefined) { this._compHide(); return; }
+  var ins = (typeof it === "string") ? it : it.text;
+  var ta = this.ta, v = String(ta.value);
+  ta.value = v.slice(0, c.a) + ins + v.slice(c.b);
+  var p = c.a + ins.length;
+  try { ta.setSelectionRange(p, p); } catch (e) { /* old browser */ }
+  try { ta.selectionStart = p; ta.selectionEnd = p; } catch (e) { /* ignore */ }
+  this._compHide();
+  if (this.opts.onEdit) this.opts.onEdit();
+  if (this.opts.onCaret) this.opts.onCaret();
+  if (ta.focus) { try { ta.focus(); } catch (e) { /* ignore */ } }
+};
+
+Editor.prototype._compCaretCheck = function () {
+  var c = this._comp;
+  if (!c) return;
+  var s = this.ta.selectionStart;
+  if (s === null || s === undefined || s !== c.caret) this._compHide();
+};
+
+Editor.prototype.setLineMarks = function (marks) {
+  var key = "";
+  try { key = JSON.stringify(marks || {}); } catch (e) { key = "x" + Math.random(); }
+  if (key === this._marksKey) return;
+  this._marksKey = key;
+  this.lineMarks = marks || {};
+  if (this.mode === "edit") this._gutterRender();
+};
+
+Editor.prototype._gutterRender = function () {
+  var n = this.lines.length, g = "", marks = this.lineMarks || {}, i, mk;
+  for (i = 1; i <= n; i++) {
+    mk = marks[i];
+    if (mk) {
+      g += '<span class="gln mk-' + mk.kind + '" title="' + esc(mk.msg) + '">' + i + "</span>";
+    } else {
+      g += '<span class="gln">' + i + "</span>";
+    }
+  }
+  this.gutter.innerHTML = g;
+};
 
 // global search across sections -> [{sec, line, text}]
 function searchAll(sections, query, max) {
@@ -314,6 +621,7 @@ function searchAll(sections, query, max) {
 }
 
 return { Editor: Editor, highlight: highlight, searchAll: searchAll,
+  wordAt: wordAt, matchList: matchList,
   setSymNames: setSymNames, symNamesOn: symNamesOnFlag,
   setSymOverrides: setSymOverrides };
 
