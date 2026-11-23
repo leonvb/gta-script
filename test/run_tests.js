@@ -187,7 +187,7 @@ console.log("== unit: float bit fidelity ==");
     }
   }
   console.log("   distinct floats: " + seen.size);
-  let bad = 0;
+  let bad = 0, exp = 0, maxDec = 0;
   for (const bits of seen) {
     const buf = new ArrayBuffer(4);
     new DataView(buf).setUint32(0, bits, true);
@@ -196,8 +196,19 @@ console.log("== unit: float bit fidelity ==");
     const back = new DataView(new ArrayBuffer(4));
     back.setFloat32(0, parseFloat(s), true);
     if (back.getUint32(0, true) !== bits) { bad++; if (bad < 4) console.log("   BAD", bits.toString(16), s); }
+    if (/[eE]/.test(s)) exp++;
+    const m = /^-?\d+\.(\d+)$/.exec(s);
+    if (m && m[1].length > maxDec) maxDec = m[1].length;
   }
   eq(bad, 0, "float text round-trip losses");
+  eq(exp, 0, "no exponent-form floats in retail disassembly");
+  console.log("   max decimals used: " + maxDec);
+  // spot-check the rounding itself through real float32 values
+  const f32 = x => { const b = new DataView(new ArrayBuffer(4)); b.setFloat32(0, x, true); return b.getFloat32(0, true); };
+  eq(SCM.formatFloat(f32(1999.920043)), "1999.92", "round to hundredths");
+  eq(SCM.formatFloat(f32(0.30000001)), "0.3", "round to tenths");
+  eq(SCM.formatFloat(f32(100.0)), "100.0", "whole float keeps .0");
+  eq(SCM.formatFloat(f32(-2.5)), "-2.5", "negative tenth");
 }
 
 console.log("== unit: errors ==");
