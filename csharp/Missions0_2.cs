@@ -12,9 +12,9 @@
 // - Globals keep their friendly symbol names (Globals.mission_flag);
 //   the $offset, category and read/write stats ride along in comments.
 // - Models are Model.ADMIRAL etc.; text labels are plain strings.
-// - Control flow is preserved as-is (labels/goto/if), GOSUB becomes a
-//   private method call. A fancier compiler could structure the loops;
-//   this sketch stays line-faithful so the logic can be checked.
+// - Control flow is structured: wait loops become while, skips become if,
+//   stacked same-target checks merge into && chains. The cutscene phase
+//   is one method call; skipping returns from it. GOSUB becomes a call.
 // - This file is never executed as C# (methods throw); it is the input
 //   a flavour compiler would lower back to SCM assembly/bytecode.
 using System;
@@ -862,7 +862,7 @@ namespace VcFlavour
         /// <summary><c>0177: SET_OBJECT_HEADING</c></summary>
         public static void SetObjectHeading(Obj obj, float angle) => throw new NotImplementedException();
         /// <summary><c>01AF: LOCATE_CAR_3D</c></summary>
-        public static bool LocateCar3d(Car car, float xCoord, float yCoord, float zCoord, float xRadius, float yRadius, float zRadius, bool flag) => throw new NotImplementedException();
+        public static bool LocateCar3D(Car car, float xCoord, float yCoord, float zCoord, float xRadius, float yRadius, float zRadius, bool flag) => throw new NotImplementedException();
         /// <summary><c>01B4: SET_PLAYER_CONTROL</c></summary>
         public static void SetPlayerControl(Player player, bool flag) => throw new NotImplementedException();
         /// <summary><c>01B6: FORCE_WEATHER_NOW</c></summary>
@@ -3113,1376 +3113,16 @@ namespace VcFlavour
             Scm.LoadScene(231.39999389648438f, -1277.699951171875f, 19.0f);
             Scm.SetExtraColours(16, false);
             Scm.LoadAllModelsNow();
-            L_127:;
-            if (!(!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasSpecialCharacterLoaded(3) || !Scm.HasSpecialCharacterLoaded(4) || !Scm.HasSpecialCharacterLoaded(5))) goto L_171;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_16A;
-            goto L_2D16;
-            L_16A:;
-            goto L_127;
-            L_171:;
-            if (!(!Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02) || !Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.CUTOBJ04))) goto L_1BB;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1B4;
-            goto L_2D16;
-            L_1B4:;
-            goto L_171;
-            L_1BB:;
-            Scm.LoadCutscene("INT_A");
-            Scm.SetCutsceneOffset(231.41099548339844f, -1277.70703125f, 19.069000244140625f);
-            Scm.SetNearClip(0.10000000149011612f);
-            Globals.object_shared_02 = Scm.CreateCutsceneObject(Model.SPECIAL01);
-            Scm.SetCutsceneAnim(Globals.object_shared_02, "SFRENDA");
-            Globals.object_intro_01 = Scm.CreateCutsceneObject(Model.SPECIAL02);
-            Scm.SetCutsceneAnim(Globals.object_intro_01, "SFRENDB");
-            Globals.object_shared_07 = Scm.CreateCutsceneObject(Model.SPECIAL03);
-            Scm.SetCutsceneAnim(Globals.object_shared_07, "CSSONNY");
-            Globals.object_shared_03 = Scm.CreateCutsceneObject(Model.SPECIAL04);
-            Scm.SetCutsceneAnim(Globals.object_shared_03, "SGOONA");
-            Globals.object_shared_04 = Scm.CreateCutsceneObject(Model.SPECIAL05);
-            Scm.SetCutsceneAnim(Globals.object_shared_04, "SGOONB");
-            Globals.object_intro_08 = Scm.CreateCutsceneObject(Model.CUTOBJ01);
-            Scm.SetCutsceneAnim(Globals.object_intro_08, "SVNTRAY");
-            Globals.object_intro_09 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
-            Scm.SetCutsceneAnim(Globals.object_intro_09, "DRINK01");
-            Globals.object_intro_10 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
-            Scm.SetCutsceneAnim(Globals.object_intro_10, "DRINK02");
-            Globals.object_intro_11 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
-            Scm.SetCutsceneAnim(Globals.object_intro_11, "DRINK03");
-            Globals.object_shared_01 = Scm.CreateCutsceneObject(Model.CUTOBJ03);
-            Scm.SetCutsceneAnim(Globals.object_shared_01, "MBTBEMP");
-            Globals.object_shared_49 = Scm.CreateCutsceneObject(Model.CUTOBJ04);
-            Scm.SetCutsceneAnim(Globals.object_shared_49, "SCHAIR");
-            Scm.DoFade(2000, Fade.In);
-            Scm.SwitchRubbish(false);
-            Scm.SwitchStreaming(true);
-            Scm.StartCutscene();
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            L_2D5:;
-            if (!(1246 > Globals.cutscene_time)) goto L_318;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_311;
-            goto L_2D16;
-            L_311:;
-            goto L_2D5;
-            L_318:;
-            Scm.PrintNow("INT1_A", 10000, 1);
-            L_327:;
-            if (!(2708 > Globals.cutscene_time)) goto L_36A;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_363;
-            goto L_2D16;
-            L_363:;
-            goto L_327;
-            L_36A:;
-            Scm.PrintNow("INT1_B", 10000, 1);
-            L_379:;
-            if (!(4796 > Globals.cutscene_time)) goto L_3BC;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_3B5;
-            goto L_2D16;
-            L_3B5:;
-            goto L_379;
-            L_3BC:;
-            Scm.PrintNow("INT1_C", 10000, 1);
-            L_3CB:;
-            if (!(7086 > Globals.cutscene_time)) goto L_40E;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_407;
-            goto L_2D16;
-            L_407:;
-            goto L_3CB;
-            L_40E:;
-            Scm.PrintNow("INT1_D", 10000, 1);
-            L_41D:;
-            if (!(8404 > Globals.cutscene_time)) goto L_460;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_459;
-            goto L_2D16;
-            L_459:;
-            goto L_41D;
-            L_460:;
-            Scm.PrintNow("INT1_E", 10000, 1);
-            L_46F:;
-            if (!(10756 > Globals.cutscene_time)) goto L_4B2;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_4AB;
-            goto L_2D16;
-            L_4AB:;
-            goto L_46F;
-            L_4B2:;
-            Scm.PrintNow("INT1_F", 10000, 1);
-            L_4C1:;
-            if (!(12614 > Globals.cutscene_time)) goto L_504;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_4FD;
-            goto L_2D16;
-            L_4FD:;
-            goto L_4C1;
-            L_504:;
-            Scm.PrintNow("INT1_G", 10000, 1);
-            L_513:;
-            if (!(14813 > Globals.cutscene_time)) goto L_556;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_54F;
-            goto L_2D16;
-            L_54F:;
-            goto L_513;
-            L_556:;
-            Scm.PrintNow("INT1_H", 10000, 1);
-            L_565:;
-            if (!(18741 > Globals.cutscene_time)) goto L_5A8;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_5A1;
-            goto L_2D16;
-            L_5A1:;
-            goto L_565;
-            L_5A8:;
-            Scm.PrintNow("INT1_I", 10000, 1);
-            L_5B7:;
-            if (!(21294 > Globals.cutscene_time)) goto L_5FA;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_5F3;
-            goto L_2D16;
-            L_5F3:;
-            goto L_5B7;
-            L_5FA:;
-            Scm.PrintNow("INT1_J", 10000, 1);
-            L_609:;
-            if (!(24399 > Globals.cutscene_time)) goto L_64C;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_645;
-            goto L_2D16;
-            L_645:;
-            goto L_609;
-            L_64C:;
-            Scm.PrintNow("INT1_K", 10000, 1);
-            L_65B:;
-            if (!(26496 > Globals.cutscene_time)) goto L_69E;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_697;
-            goto L_2D16;
-            L_697:;
-            goto L_65B;
-            L_69E:;
-            Scm.PrintNow("INT1_L", 10000, 1);
-            L_6AD:;
-            if (!(31264 > Globals.cutscene_time)) goto L_6F0;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_6E9;
-            goto L_2D16;
-            L_6E9:;
-            goto L_6AD;
-            L_6F0:;
-            Scm.PrintNow("INT1_M", 10000, 1);
-            L_6FF:;
-            if (!(32904 > Globals.cutscene_time)) goto L_744;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_73D;
-            goto L_2D16;
-            L_73D:;
-            goto L_6FF;
-            L_744:;
-            Scm.PrintNow("INT1_N", 10000, 1);
-            L_753:;
-            if (!(35200 > Globals.cutscene_time)) goto L_798;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_791;
-            goto L_2D16;
-            L_791:;
-            goto L_753;
-            L_798:;
-            Scm.PrintNow("INT1_O", 10000, 1);
-            L_7A7:;
-            if (!(36522 > Globals.cutscene_time)) goto L_7EC;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_7E5;
-            goto L_2D16;
-            L_7E5:;
-            goto L_7A7;
-            L_7EC:;
-            Scm.PrintNow("INT1_P", 10000, 1);
-            L_7FB:;
-            if (!(41196 > Globals.cutscene_time)) goto L_840;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_839;
-            goto L_2D16;
-            L_839:;
-            goto L_7FB;
-            L_840:;
-            Scm.PrintNow("INT1_Q", 10000, 1);
-            L_84F:;
-            if (!(45232 > Globals.cutscene_time)) goto L_894;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_88D;
-            goto L_2D16;
-            L_88D:;
-            goto L_84F;
-            L_894:;
-            Scm.PrintNow("INT1_R", 10000, 1);
-            L_8A3:;
-            if (!(48992 > Globals.cutscene_time)) goto L_8E8;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_8E1;
-            goto L_2D16;
-            L_8E1:;
-            goto L_8A3;
-            L_8E8:;
-            Scm.PrintNow("INT1_S", 10000, 1);
-            L_8F7:;
-            if (!(50206 > Globals.cutscene_time)) goto L_93C;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_935;
-            goto L_2D16;
-            L_935:;
-            goto L_8F7;
-            L_93C:;
-            Scm.PrintNow("INT1_T", 10000, 1);
-            L_94B:;
-            if (!(52509 > Globals.cutscene_time)) goto L_990;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_989;
-            goto L_2D16;
-            L_989:;
-            goto L_94B;
-            L_990:;
-            Scm.PrintNow("INT1_U", 10000, 1);
-            L_99F:;
-            if (!(54340 > Globals.cutscene_time)) goto L_9E4;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_9DD;
-            goto L_2D16;
-            L_9DD:;
-            goto L_99F;
-            L_9E4:;
-            Scm.PrintNow("INT1_V", 10000, 1);
-            L_9F3:;
-            if (!(56291 > Globals.cutscene_time)) goto L_A38;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_A31;
-            goto L_2D16;
-            L_A31:;
-            goto L_9F3;
-            L_A38:;
-            Scm.PrintNow("INT1_W", 10000, 1);
-            L_A47:;
-            if (!(57900 > Globals.cutscene_time)) goto L_A8C;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_A85;
-            goto L_2D16;
-            L_A85:;
-            goto L_A47;
-            L_A8C:;
-            Scm.PrintNow("INT1_X", 10000, 1);
-            L_A9B:;
-            if (!(61168 > Globals.cutscene_time)) goto L_AE0;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_AD9;
-            goto L_2D16;
-            L_AD9:;
-            goto L_A9B;
-            L_AE0:;
-            Scm.PrintNow("INT1_Y", 10000, 1);
-            L_AEF:;
-            if (!(62518 > Globals.cutscene_time)) goto L_B34;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_B2D;
-            goto L_2D16;
-            L_B2D:;
-            goto L_AEF;
-            L_B34:;
-            Scm.PrintNow("INT1_Z", 10000, 1);
-            L_B43:;
-            if (!(64169 > Globals.cutscene_time)) goto L_B88;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_B81;
-            goto L_2D16;
-            L_B81:;
-            goto L_B43;
-            L_B88:;
-            Scm.PrintNow("INT1_A1", 10000, 1);
-            L_B97:;
-            if (!(65706 > Globals.cutscene_time)) goto L_BDC;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_BD5;
-            goto L_2D16;
-            L_BD5:;
-            goto L_B97;
-            L_BDC:;
-            Scm.PrintNow("INT1_A2", 10000, 1);
-            L_BEB:;
-            if (!(66784 > Globals.cutscene_time)) goto L_C30;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_C29;
-            goto L_2D16;
-            L_C29:;
-            goto L_BEB;
-            L_C30:;
-            Scm.ClearPrints();
-            L_C32:;
-            if (!(68240 > Globals.cutscene_time)) goto L_C77;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_C70;
-            goto L_2D16;
-            L_C70:;
-            goto L_C32;
-            L_C77:;
-            Scm.ClearPrints();
-            Scm.SetFadingColour(1, 1, 1);
-            Scm.DoFade(2000, Fade.Out);
-            L_C88:;
-            if (!Scm.GetFadingStatus()) goto L_CC0;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_CB9;
-            goto L_2D16;
-            L_CB9:;
-            goto L_C88;
-            L_CC0:;
-            Scm.ClearCutscene();
-            Scm.ClearExtraColours(false);
-            Scm.SwitchRubbish(true);
-            Scm.UnloadSpecialCharacter(1);
-            Scm.UnloadSpecialCharacter(2);
-            Scm.UnloadSpecialCharacter(3);
-            Scm.UnloadSpecialCharacter(4);
-            Scm.UnloadSpecialCharacter(5);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ01);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ02);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ03);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ04);
-            Scm.SetVisibilityOfClosestObjectOfType(231.39999389648438f, -1277.699951171875f, 19.0f, 50.0f, Model.MOB_MOBROOM2, false);
-            Scm.SetVisibilityOfClosestObjectOfType(231.39999389648438f, -1277.699951171875f, 19.0f, 50.0f, Model.MOB_DETAILSB, false);
-            Scm.SetAreaVisible(Vis.MainMap);
-            Scm.Wait(0);
-            Scm.DisableCutsceneShadows();
-            Scm.LoadSplashScreen("INTRO2");
-            Scm.SetFadingColour(2, 2, 2);
-            Scm.Wait(250);
-            Scm.ForceWeatherNow(Weather.ExtraSunny);
-            Scm.SetTimeOfDay(12, 0);
-            Scm.LoadSpecialCharacter(1, "CSKEN");
-            Scm.LoadSpecialCharacter(2, "CSPLAY");
-            Scm.LoadSpecialCharacter(3, "SGOONA");
-            Scm.LoadSpecialCharacter(4, "SGOONB");
-            Scm.LoadSpecialModel(Model.CUTOBJ01, "AIRPLAN");
-            Scm.LoadSpecialModel(Model.CUTOBJ02, "MERCED");
-            Scm.LoadSpecialModel(Model.CUTOBJ03, "BRFCASE");
-            Scm.RequestModel(Model.AP_RADAR1_01);
-            Scm.RequestModel(Model.VEG_PALM04);
-            Scm.LoadScene(-1592.0f, -545.0f, 15.0f);
-            Scm.RequestCollision(-1654.0f, -1388.0f);
-            Scm.LoadAllModelsNow();
-            L_DCF:;
-            if (!(!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasSpecialCharacterLoaded(3) || !Scm.HasSpecialCharacterLoaded(4) || !Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02))) goto L_E1F;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_E18;
-            goto L_2D16;
-            L_E18:;
-            goto L_DCF;
-            L_E1F:;
-            if (!(!Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.AP_RADAR1_01) || !Scm.HasModelLoaded(Model.VEG_PALM04))) goto L_E62;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_E5B;
-            goto L_2D16;
-            L_E5B:;
-            goto L_E1F;
-            L_E62:;
-            Scm.SetPlayerCoordinates(Globals.player, -1654.0f, -1388.0f, -100.0f);
-            Scm.LoadUncompressedAnim("AIRPLAN");
-            Scm.LoadCutscene("INT_M");
-            Scm.SetCutsceneOffset(-1601.5360107421875f, -548.2979736328125f, 13.678999900817871f);
-            Globals.cutscene_object_2 = Scm.CreateCutsceneObject(Model.SPECIAL01);
-            Scm.SetCutsceneAnim(Globals.cutscene_object_2, "CSKEN");
-            Globals.cutscene_object = Scm.CreateCutsceneObject(Model.SPECIAL02);
-            Scm.SetCutsceneAnim(Globals.cutscene_object, "CSPLAY");
-            Globals.object_shared_03 = Scm.CreateCutsceneObject(Model.SPECIAL03);
-            Scm.SetCutsceneAnim(Globals.object_shared_03, "SGOONA");
-            Globals.object_shared_04 = Scm.CreateCutsceneObject(Model.SPECIAL04);
-            Scm.SetCutsceneAnim(Globals.object_shared_04, "SGOONB");
-            Globals.object_intro_13 = Scm.CreateCutsceneObject(Model.CUTOBJ01);
-            Scm.SetCutsceneAnim(Globals.object_intro_13, "AIRPLAN");
-            Globals.object_intro_12 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
-            Scm.SetCutsceneAnim(Globals.object_intro_12, "MERCED");
-            Scm.SetObjectDrawLast(Globals.object_intro_12, true);
-            Globals.object_intro_02 = Scm.CreateCutsceneObject(Model.CUTOBJ03);
-            Scm.SetCutsceneAnim(Globals.object_intro_02, "BRFCASE");
-            Scm.AttachCutsceneObjectToComponent(Globals.cutscene_object_2, Globals.object_intro_12, "MERCBOD");
-            Scm.AttachCutsceneObjectToComponent(Globals.cutscene_object, Globals.object_intro_12, "MERCBOD");
-            Scm.AttachCutsceneObjectToComponent(Globals.object_shared_03, Globals.object_intro_12, "MERCBOD");
-            Scm.AttachCutsceneObjectToComponent(Globals.object_shared_04, Globals.object_intro_12, "MERCBOD");
-            Scm.DoFade(3000, Fade.In);
-            Scm.SwitchStreaming(true);
-            Scm.StartCutscene();
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            L_F83:;
-            if (!(4860 > Globals.cutscene_time)) goto L_FC6;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_FBF;
-            goto L_2D16;
-            L_FBF:;
-            goto L_F83;
-            L_FC6:;
-            Scm.PrintNow("INT2_A", 10000, 1);
-            L_FD5:;
-            if (!(6400 > Globals.cutscene_time)) goto L_1018;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1011;
-            goto L_2D16;
-            L_1011:;
-            goto L_FD5;
-            L_1018:;
-            Scm.SetNearClip(0.15000000596046448f);
-            L_101F:;
-            if (!(9600 > Globals.cutscene_time)) goto L_1062;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_105B;
-            goto L_2D16;
-            L_105B:;
-            goto L_101F;
-            L_1062:;
-            Scm.PrintNow("INT2_B", 10000, 1);
-            L_1071:;
-            if (!(12342 > Globals.cutscene_time)) goto L_10B4;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_10AD;
-            goto L_2D16;
-            L_10AD:;
-            goto L_1071;
-            L_10B4:;
-            Scm.PrintNow("INT2_C", 10000, 1);
-            L_10C3:;
-            if (!(15840 > Globals.cutscene_time)) goto L_1106;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_10FF;
-            goto L_2D16;
-            L_10FF:;
-            goto L_10C3;
-            L_1106:;
-            Scm.PrintNow("INT2_D", 10000, 1);
-            L_1115:;
-            if (!(17556 > Globals.cutscene_time)) goto L_1158;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1151;
-            goto L_2D16;
-            L_1151:;
-            goto L_1115;
-            L_1158:;
-            Scm.PrintNow("INT2_E", 10000, 1);
-            L_1167:;
-            if (!(20640 > Globals.cutscene_time)) goto L_11AA;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_11A3;
-            goto L_2D16;
-            L_11A3:;
-            goto L_1167;
-            L_11AA:;
-            Scm.PrintNow("INT2_F", 10000, 1);
-            L_11B9:;
-            if (!(23018 > Globals.cutscene_time)) goto L_11FC;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_11F5;
-            goto L_2D16;
-            L_11F5:;
-            goto L_11B9;
-            L_11FC:;
-            Scm.PrintNow("INT2_G", 10000, 1);
-            L_120B:;
-            if (!(25863 > Globals.cutscene_time)) goto L_124E;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1247;
-            goto L_2D16;
-            L_1247:;
-            goto L_120B;
-            L_124E:;
-            Scm.PrintNow("INT2_H", 10000, 1);
-            L_125D:;
-            if (!(26000 > Globals.cutscene_time)) goto L_12A0;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1299;
-            goto L_2D16;
-            L_1299:;
-            goto L_125D;
-            L_12A0:;
-            if (!(27624 > Globals.cutscene_time)) goto L_12E3;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_12DC;
-            goto L_2D16;
-            L_12DC:;
-            goto L_12A0;
-            L_12E3:;
-            Scm.PrintNow("INT2_I", 10000, 1);
-            L_12F2:;
-            if (!(29348 > Globals.cutscene_time)) goto L_1335;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_132E;
-            goto L_2D16;
-            L_132E:;
-            goto L_12F2;
-            L_1335:;
-            Scm.PrintNow("INT2_J", 10000, 1);
-            L_1344:;
-            if (!(30300 > Globals.cutscene_time)) goto L_1387;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1380;
-            goto L_2D16;
-            L_1380:;
-            goto L_1344;
-            L_1387:;
-            Scm.ClearPrints();
-            Scm.SetFadingColour(1, 1, 1);
-            Scm.DoFade(2000, Fade.Out);
-            L_1398:;
-            if (!Scm.GetFadingStatus()) goto L_13EC;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            if (!(Globals.cutscene_time == 33300)) goto L_13C5;
-            Scm.ClearPrints();
-            L_13C5:;
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_13E5;
-            goto L_2D16;
-            L_13E5:;
-            goto L_1398;
-            L_13EC:;
-            Scm.ClearPrints();
-            Scm.ClearCutscene();
-            Scm.UnloadSpecialCharacter(1);
-            Scm.UnloadSpecialCharacter(2);
-            Scm.UnloadSpecialCharacter(3);
-            Scm.UnloadSpecialCharacter(4);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ01);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ02);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ03);
-            Scm.MarkModelAsNoLongerNeeded(Model.AP_RADAR1_01);
-            Scm.MarkModelAsNoLongerNeeded(Model.VEG_PALM04);
-            Scm.Wait(0);
-            Scm.LoadSplashScreen("INTRO3");
-            Scm.SetFadingColour(2, 2, 2);
-            Scm.Wait(250);
-            Scm.ForceWeatherNow(Weather.Sunny);
-            Scm.SetTimeOfDay(20, 0);
-            Scm.LoadSpecialCharacter(1, "CSKEN");
-            Scm.LoadSpecialCharacter(2, "CSDEAL");
-            Scm.LoadSpecialCharacter(3, "SGOONA");
-            Scm.LoadSpecialCharacter(4, "SGOONB");
-            Scm.LoadSpecialCharacter(5, "CSASSA");
-            Scm.LoadSpecialCharacter(6, "CSASSB");
-            Scm.LoadSpecialCharacter(7, "CSASSC");
-            Scm.LoadSpecialCharacter(8, "CSPLAY");
-            Scm.LoadSpecialModel(Model.CUTOBJ01, "CS_CHOP");
-            Scm.LoadSpecialModel(Model.CUTOBJ02, "BRFCASE");
-            Scm.LoadSpecialModel(Model.CUTOBJ03, "DELCASE");
-            Scm.LoadSpecialModel(Model.CUTOBJ04, "MERCED");
-            Scm.RequestModel(Model.DOC_CRANEEGGS04);
-            Scm.RequestModel(Model.DOC_CRANE_CAB04);
-            Scm.RequestModel(Model.DOCKFUEL07);
-            Scm.RequestCollision(-692.0f, -1559.0f);
-            Scm.SetPlayerCoordinates(Globals.player, -683.14501953125f, -1581.7469482421875f, 11.529999732971191f);
-            Scm.LoadScene(-692.0f, -1559.0f, 12.0f);
-            Scm.SetExtraColours(14, false);
-            Scm.LoadAllModelsNow();
-            L_1515:;
-            if (!(!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasSpecialCharacterLoaded(3) || !Scm.HasSpecialCharacterLoaded(4) || !Scm.HasSpecialCharacterLoaded(5) || !Scm.HasSpecialCharacterLoaded(6))) goto L_1563;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_155C;
-            goto L_2D16;
-            L_155C:;
-            goto L_1515;
-            L_1563:;
-            if (!(!Scm.HasSpecialCharacterLoaded(7) || !Scm.HasSpecialCharacterLoaded(8) || !Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02) || !Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.CUTOBJ04))) goto L_15B5;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_15AE;
-            goto L_2D16;
-            L_15AE:;
-            goto L_1563;
-            L_15B5:;
-            if (!(!Scm.HasModelLoaded(Model.DOC_CRANEEGGS04) || !Scm.HasModelLoaded(Model.DOC_CRANE_CAB04) || !Scm.HasModelLoaded(Model.DOCKFUEL07))) goto L_15F7;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_15F0;
-            goto L_2D16;
-            L_15F0:;
-            goto L_15B5;
-            L_15F7:;
-            Scm.LoadUncompressedAnim("CS_CHOP");
-            Scm.LoadCutscene("INT_D");
-            Scm.SetCutsceneOffset(-690.0f, -1568.0f, 11.4399995803833f);
-            Globals.cutscene_object = Scm.CreateCutsceneObject(Model.SPECIAL08);
-            Scm.SetCutsceneAnim(Globals.cutscene_object, "CSPLAY");
-            Globals.cutscene_object_2 = Scm.CreateCutsceneObject(Model.SPECIAL01);
-            Scm.SetCutsceneAnim(Globals.cutscene_object_2, "CSKEN");
-            Globals.object_intro_04 = Scm.CreateCutsceneObject(Model.SPECIAL02);
-            Scm.SetCutsceneAnim(Globals.object_intro_04, "CSDEAL");
-            Globals.object_shared_03 = Scm.CreateCutsceneObject(Model.SPECIAL03);
-            Scm.SetCutsceneAnim(Globals.object_shared_03, "SGOONA");
-            Globals.object_shared_04 = Scm.CreateCutsceneObject(Model.SPECIAL04);
-            Scm.SetCutsceneAnim(Globals.object_shared_04, "SGOONB");
-            Globals.object_intro_05 = Scm.CreateCutsceneObject(Model.SPECIAL05);
-            Scm.SetCutsceneAnim(Globals.object_intro_05, "CSASSA");
-            Globals.object_intro_06 = Scm.CreateCutsceneObject(Model.SPECIAL06);
-            Scm.SetCutsceneAnim(Globals.object_intro_06, "CSASSB");
-            Globals.object_intro_07 = Scm.CreateCutsceneObject(Model.SPECIAL07);
-            Scm.SetCutsceneAnim(Globals.object_intro_07, "CSASSC");
-            Globals.object_shared_11 = Scm.CreateCutsceneObject(Model.CUTOBJ01);
-            Scm.SetCutsceneAnim(Globals.object_shared_11, "CS_CHOP");
-            Scm.SetObjectDrawLast(Globals.object_shared_11, true);
-            Globals.object_intro_02 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
-            Scm.SetCutsceneAnim(Globals.object_intro_02, "BRFCASE");
-            Globals.object_intro_03 = Scm.CreateCutsceneObject(Model.CUTOBJ03);
-            Scm.SetCutsceneAnim(Globals.object_intro_03, "DELCASE");
-            Globals.object_intro_12 = Scm.CreateCutsceneObject(Model.CUTOBJ04);
-            Scm.SetCutsceneAnim(Globals.object_intro_12, "MERCED");
-            Scm.SetObjectDrawLast(Globals.object_intro_12, true);
-            Scm.AttachCutsceneObjectToComponent(Globals.cutscene_object_2, Globals.object_intro_12, "MERCBOD");
-            Scm.DoFade(2000, Fade.In);
-            Scm.SwitchStreaming(true);
-            Scm.StartCutscene();
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            L_1740:;
-            if (!(6500 > Globals.cutscene_time)) goto L_1783;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_177C;
-            goto L_2D16;
-            L_177C:;
-            goto L_1740;
-            L_1783:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_178F:;
-            if (!(8743 > Globals.cutscene_time)) goto L_17DE;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_17CB;
-            goto L_2D16;
-            L_17CB:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_178F;
-            L_17DE:;
-            Scm.PrintNow("INT3_A", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_17F9:;
-            if (!(10784 > Globals.cutscene_time)) goto L_1848;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1835;
-            goto L_2D16;
-            L_1835:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_17F9;
-            L_1848:;
-            Scm.PrintNow("INT3_B", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_1863:;
-            if (!(12040 > Globals.cutscene_time)) goto L_18B2;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_189F;
-            goto L_2D16;
-            L_189F:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_1863;
-            L_18B2:;
-            Scm.PrintNow("INT3_C", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_18CD:;
-            if (!(14488 > Globals.cutscene_time)) goto L_191C;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1909;
-            goto L_2D16;
-            L_1909:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_18CD;
-            L_191C:;
-            Scm.PrintNow("INT3_D", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1937:;
-            if (!(17072 > Globals.cutscene_time)) goto L_1986;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1973;
-            goto L_2D16;
-            L_1973:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1937;
-            L_1986:;
-            Scm.ClearThisPrint("INT3_D");
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_199C:;
-            if (!(20384 > Globals.cutscene_time)) goto L_19EB;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_19D8;
-            goto L_2D16;
-            L_19D8:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_199C;
-            L_19EB:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_19F7:;
-            if (!(23200 > Globals.cutscene_time)) goto L_1A46;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1A33;
-            goto L_2D16;
-            L_1A33:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_19F7;
-            L_1A46:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1A52:;
-            if (!(35596 > Globals.cutscene_time)) goto L_1AA3;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1A90;
-            goto L_2D16;
-            L_1A90:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1A52;
-            L_1AA3:;
-            Scm.PrintNow("INT3_G", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1ABE:;
-            if (!(36430 > Globals.cutscene_time)) goto L_1B0F;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1AFC;
-            goto L_2D16;
-            L_1AFC:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1ABE;
-            L_1B0F:;
-            Scm.PrintNow("INT3_H", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1B2A:;
-            if (!(39824 > Globals.cutscene_time)) goto L_1B7B;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1B68;
-            goto L_2D16;
-            L_1B68:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1B2A;
-            L_1B7B:;
-            Scm.PrintNow("INT3_M", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1B96:;
-            if (!(40896 > Globals.cutscene_time)) goto L_1BE7;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1BD4;
-            goto L_2D16;
-            L_1BD4:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1B96;
-            L_1BE7:;
-            Scm.PrintNow("INT3_I", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1C02:;
-            if (!(42518 > Globals.cutscene_time)) goto L_1C53;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1C40;
-            goto L_2D16;
-            L_1C40:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1C02;
-            L_1C53:;
-            Scm.PrintNow("INT3_J", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1C6E:;
-            if (!(46872 > Globals.cutscene_time)) goto L_1CBF;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1CAC;
-            goto L_2D16;
-            L_1CAC:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1C6E;
-            L_1CBF:;
-            Scm.PrintNow("INT3_K", 10000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1CDA:;
-            if (!(51100 > Globals.cutscene_time)) goto L_1D1F;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1D18;
-            goto L_2D16;
-            L_1D18:;
-            goto L_1CDA;
-            L_1D1F:;
-            if (Scm.WasCutsceneSkipped()) goto L_1D4C;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_1D4C:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1D58:;
-            if (!(51233 > Globals.cutscene_time)) goto L_1DA9;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1D96;
-            goto L_2D16;
-            L_1D96:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1D58;
-            L_1DA9:;
-            if (Scm.WasCutsceneSkipped()) goto L_1DD6;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_1DD6:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1DE2:;
-            if (!(51366 > Globals.cutscene_time)) goto L_1E33;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1E20;
-            goto L_2D16;
-            L_1E20:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1DE2;
-            L_1E33:;
-            if (Scm.WasCutsceneSkipped()) goto L_1E60;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_1E60:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1E6C:;
-            if (!(51500 > Globals.cutscene_time)) goto L_1EBD;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1EAA;
-            goto L_2D16;
-            L_1EAA:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1E6C;
-            L_1EBD:;
-            if (Scm.WasCutsceneSkipped()) goto L_1F0A;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            Scm.AddBigGunFlash(-696.52197265625f, -1577.4320068359375f, 12.826000213623047f, -696.4920043945312f, -1577.35400390625f, 12.8149995803833f);
-            L_1F0A:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1F16:;
-            if (!(51633 > Globals.cutscene_time)) goto L_1F67;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1F54;
-            goto L_2D16;
-            L_1F54:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1F16;
-            L_1F67:;
-            if (Scm.WasCutsceneSkipped()) goto L_1F94;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_1F94:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_1FA0:;
-            if (!(51733 > Globals.cutscene_time)) goto L_1FF1;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_1FDE;
-            goto L_2D16;
-            L_1FDE:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_1FA0;
-            L_1FF1:;
-            if (Scm.WasCutsceneSkipped()) goto L_201E;
-            Scm.AddBigGunFlash(-696.4420166015625f, -1577.3580322265625f, 12.765000343322754f, -696.4019775390625f, -1577.2860107421875f, 12.74899959564209f);
-            L_201E:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_202A:;
-            if (!(51766 > Globals.cutscene_time)) goto L_207B;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2068;
-            goto L_2D16;
-            L_2068:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_202A;
-            L_207B:;
-            if (Scm.WasCutsceneSkipped()) goto L_20A8;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_20A8:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_20B4:;
-            if (!(51900 > Globals.cutscene_time)) goto L_2105;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_20F2;
-            goto L_2D16;
-            L_20F2:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_20B4;
-            L_2105:;
-            if (Scm.WasCutsceneSkipped()) goto L_2132;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_2132:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_213E:;
-            if (!(51966 > Globals.cutscene_time)) goto L_218F;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_217C;
-            goto L_2D16;
-            L_217C:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_213E;
-            L_218F:;
-            if (Scm.WasCutsceneSkipped()) goto L_21BC;
-            Scm.AddBigGunFlash(-696.447998046875f, -1577.2740478515625f, 12.666000366210938f, -696.405029296875f, -1577.2060546875f, 12.642999649047852f);
-            L_21BC:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_21C8:;
-            if (!(52033 > Globals.cutscene_time)) goto L_2219;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2206;
-            goto L_2D16;
-            L_2206:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_21C8;
-            L_2219:;
-            if (Scm.WasCutsceneSkipped()) goto L_2266;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            Scm.AddBigGunFlash(-696.35400390625f, -1578.1219482421875f, 13.0600004196167f, -695.8359985351562f, -1577.301025390625f, 13.020000457763672f);
-            L_2266:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            L_2272:;
-            if (!(52166 > Globals.cutscene_time)) goto L_22C3;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_22B0;
-            goto L_2D16;
-            L_22B0:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
-            goto L_2272;
-            L_22C3:;
-            if (Scm.WasCutsceneSkipped()) goto L_22F0;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_22F0:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
-            L_22FC:;
-            if (!(52200 > Globals.cutscene_time)) goto L_234D;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_233A;
-            goto L_2D16;
-            L_233A:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
-            goto L_22FC;
-            L_234D:;
-            if (Scm.WasCutsceneSkipped()) goto L_237A;
-            Scm.AddBigGunFlash(-696.43701171875f, -1577.2349853515625f, 12.657999992370605f, -696.3909912109375f, -1577.1700439453125f, 12.635000228881836f);
-            L_237A:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
-            L_2386:;
-            if (!(52256 > Globals.cutscene_time)) goto L_23D7;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_23C4;
-            goto L_2D16;
-            L_23C4:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2386;
-            L_23D7:;
-            Scm.PrintNow("INT3_N", 2000, 1);
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_23F2:;
-            if (!(52300 > Globals.cutscene_time)) goto L_2443;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2430;
-            goto L_2D16;
-            L_2430:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_23F2;
-            L_2443:;
-            if (Scm.WasCutsceneSkipped()) goto L_2470;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_2470:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_247C:;
-            if (!(52433 > Globals.cutscene_time)) goto L_24CD;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_24BA;
-            goto L_2D16;
-            L_24BA:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_247C;
-            L_24CD:;
-            if (Scm.WasCutsceneSkipped()) goto L_251A;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            Scm.AddBigGunFlash(-696.4390258789062f, -1577.2220458984375f, 12.652999877929688f, -696.3909912109375f, -1577.157958984375f, 12.630000114440918f);
-            L_251A:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_2526:;
-            if (!(52566 > Globals.cutscene_time)) goto L_2577;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2564;
-            goto L_2D16;
-            L_2564:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2526;
-            L_2577:;
-            if (Scm.WasCutsceneSkipped()) goto L_25A4;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_25A4:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_25B0:;
-            if (!(52666 > Globals.cutscene_time)) goto L_2601;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_25EE;
-            goto L_2D16;
-            L_25EE:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_25B0;
-            L_2601:;
-            if (Scm.WasCutsceneSkipped()) goto L_262E;
-            Scm.AddBigGunFlash(-696.4650268554688f, -1577.18896484375f, 12.64799976348877f, -696.4190063476562f, -1577.2130126953125f, 12.625f);
-            L_262E:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_263A:;
-            if (!(52700 > Globals.cutscene_time)) goto L_268B;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2678;
-            goto L_2D16;
-            L_2678:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_263A;
-            L_268B:;
-            if (Scm.WasCutsceneSkipped()) goto L_26B8;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_26B8:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_26C4:;
-            if (!(52833 > Globals.cutscene_time)) goto L_2715;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2702;
-            goto L_2D16;
-            L_2702:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_26C4;
-            L_2715:;
-            if (Scm.WasCutsceneSkipped()) goto L_2742;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_2742:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_274E:;
-            if (!(52900 > Globals.cutscene_time)) goto L_279F;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_278C;
-            goto L_2D16;
-            L_278C:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_274E;
-            L_279F:;
-            if (Scm.WasCutsceneSkipped()) goto L_27CC;
-            Scm.AddBigGunFlash(-696.5759887695312f, -1577.1109619140625f, 12.685999870300293f, -696.5380249023438f, -1577.0400390625f, 12.666999816894531f);
-            L_27CC:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_27D8:;
-            if (!(52966 > Globals.cutscene_time)) goto L_2829;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2816;
-            goto L_2D16;
-            L_2816:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_27D8;
-            L_2829:;
-            if (Scm.WasCutsceneSkipped()) goto L_2856;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_2856:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_2862:;
-            if (!(53100 > Globals.cutscene_time)) goto L_28B3;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_28A0;
-            goto L_2D16;
-            L_28A0:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2862;
-            L_28B3:;
-            if (Scm.WasCutsceneSkipped()) goto L_28E0;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_28E0:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_28EC:;
-            if (!(53133 > Globals.cutscene_time)) goto L_293D;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_292A;
-            goto L_2D16;
-            L_292A:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_28EC;
-            L_293D:;
-            if (Scm.WasCutsceneSkipped()) goto L_296A;
-            Scm.AddBigGunFlash(-696.6920166015625f, -1577.050048828125f, 12.70300006866455f, -696.6649780273438f, -1576.9730224609375f, 12.685999870300293f);
-            L_296A:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_2976:;
-            if (!(53233 > Globals.cutscene_time)) goto L_29C7;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_29B4;
-            goto L_2D16;
-            L_29B4:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2976;
-            L_29C7:;
-            if (Scm.WasCutsceneSkipped()) goto L_29F4;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_29F4:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_2A00:;
-            if (!(53366 > Globals.cutscene_time)) goto L_2A51;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2A3E;
-            goto L_2D16;
-            L_2A3E:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2A00;
-            L_2A51:;
-            if (Scm.WasCutsceneSkipped()) goto L_2ABE;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            Scm.AddBigGunFlash(-696.35400390625f, -1578.1219482421875f, 13.0600004196167f, -695.8359985351562f, -1577.301025390625f, 13.020000457763672f);
-            Scm.AddBigGunFlash(-696.781005859375f, -1576.8990478515625f, 12.687999725341797f, -696.676025390625f, -1576.91796875f, 12.670000076293945f);
-            L_2ABE:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_2ACA:;
-            if (!(53500 > Globals.cutscene_time)) goto L_2B1B;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2B08;
-            goto L_2D16;
-            L_2B08:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2ACA;
-            L_2B1B:;
-            if (Scm.WasCutsceneSkipped()) goto L_2B48;
-            Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
-            L_2B48:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            L_2B54:;
-            if (!(57000 > Globals.cutscene_time)) goto L_2BA5;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2B92;
-            goto L_2D16;
-            L_2B92:;
-            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
-            goto L_2B54;
-            L_2BA5:;
-            if (!(58736 > Globals.cutscene_time)) goto L_2BEA;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2BE3;
-            goto L_2D16;
-            L_2BE3:;
-            goto L_2BA5;
-            L_2BEA:;
-            Scm.PrintNow("INT3_L", 10000, 1);
-            L_2BF9:;
-            if (!(60800 > Globals.cutscene_time)) goto L_2C3E;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2C37;
-            goto L_2D16;
-            L_2C37:;
-            goto L_2BF9;
-            L_2C3E:;
-            Scm.ClearPrints();
-            L_2C40:;
-            if (!(63212 > Globals.cutscene_time)) goto L_2C85;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2C7E;
-            goto L_2D16;
-            L_2C7E:;
-            goto L_2C40;
-            L_2C85:;
-            Scm.SetFadingColour(1, 1, 1);
-            Scm.DoFade(2000, Fade.Out);
-            L_2C94:;
-            if (!Scm.GetFadingStatus()) goto L_2CCC;
-            Scm.Wait(0);
-            UpdateSkipState();
-            if (!(Globals.state_shared_01 == 2)) goto L_2CC5;
-            goto L_2D16;
-            L_2CC5:;
-            goto L_2C94;
-            L_2CCC:;
-            Scm.ClearExtraColours(false);
-            Scm.ClearCutscene();
-            Scm.UnloadSpecialCharacter(1);
-            Scm.UnloadSpecialCharacter(2);
-            Scm.UnloadSpecialCharacter(3);
-            Scm.UnloadSpecialCharacter(4);
-            Scm.UnloadSpecialCharacter(5);
-            Scm.UnloadSpecialCharacter(6);
-            Scm.UnloadSpecialCharacter(7);
-            Scm.UnloadSpecialCharacter(8);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ01);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ02);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ03);
-            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ04);
-            Scm.MarkModelAsNoLongerNeeded(Model.DOC_CRANEEGGS04);
-            Scm.MarkModelAsNoLongerNeeded(Model.DOC_CRANE_CAB04);
-            Scm.MarkModelAsNoLongerNeeded(Model.DOCKFUEL07);
-            Scm.Wait(0);
-            L_2D16:;
+            PlayIntroCutscenes();
             Scm.LoadSplashScreen("INTRO4");
             Scm.SetFadingColour(2, 2, 2);
-            if (!(Globals.state_shared_01 == 2)) goto L_2D5B;
-            Scm.DoFade(1000, Fade.Out);
-            Scm.ClearPrints();
-            L_2D43:;
-            if (!Scm.GetFadingStatus()) goto L_2D5B;
-            Scm.Wait(0);
-            goto L_2D43;
-            L_2D5B:;
+            if (Globals.state_shared_01 == 2) {
+                Scm.DoFade(1000, Fade.Out);
+                Scm.ClearPrints();
+                while (Scm.GetFadingStatus()) {
+                    Scm.Wait(0);
+                }
+            }
             Scm.ReleaseWeather();
             Scm.SetTimeOfDay(21, 0);
             Scm.ClearCutscene();
@@ -4534,20 +3174,16 @@ namespace VcFlavour
             Scm.SetEveryoneIgnorePlayer(Globals.player, true);
             Scm.LoadMissionAudio(1, "INTRO1");
             Scm.LoadMissionAudio(2, "INTRO2");
-            L_2E7B:;
-            if (!(!Scm.HasMissionAudioLoaded(1) || !Scm.HasMissionAudioLoaded(2))) goto L_2E99;
-            Scm.Wait(0);
-            goto L_2E7B;
-            L_2E99:;
+            while (!Scm.HasMissionAudioLoaded(1) || !Scm.HasMissionAudioLoaded(2)) {
+                Scm.Wait(0);
+            }
             Scm.RequestModel(Model.ADMIRAL);
             Scm.RequestModel(Model.FAGGIO);
             Scm.LoadSpecialCharacter(10, "IGKEN");
             Scm.LoadAllModelsNow();
-            L_2EB1:;
-            if (!(!Scm.HasModelLoaded(Model.ADMIRAL) || !Scm.HasModelLoaded(Model.FAGGIO) || !Scm.HasSpecialCharacterLoaded(10))) goto L_2ED5;
-            Scm.Wait(0);
-            goto L_2EB1;
-            L_2ED5:;
+            while (!Scm.HasModelLoaded(Model.ADMIRAL) || !Scm.HasModelLoaded(Model.FAGGIO) || !Scm.HasSpecialCharacterLoaded(10)) {
+                Scm.Wait(0);
+            }
             Scm.ClearArea(114.19999694824219f, -823.2999877929688f, 9.699999809265137f, 1.0f, false);
             Scm.RequestCollision(86.4280014038086f, -852.2379760742188f);
             Scm.LoadScene(114.19999694824219f, -823.2999877929688f, 9.699999809265137f);
@@ -4570,196 +3206,157 @@ namespace VcFlavour
             Scm.SetRadioChannel((Radio)9, -1);
             Scm.MarkModelAsNoLongerNeeded(Model.ADMIRAL);
             Scm.MarkModelAsNoLongerNeeded(Model.FAGGIO);
-            L_2FF3:;
-            if (Scm.IsCharInAnyCar(Globals.player_char)) goto L_301E;
-            Scm.Wait(0);
-            if (!Scm.IsCarDead(l0)) goto L_3017;
-            L_3017:;
-            goto L_2FF3;
-            L_301E:;
+            while (!Scm.IsCharInAnyCar(Globals.player_char)) {
+                Scm.Wait(0);
+                Scm.IsCarDead(l0); // result unused in the original script
+            }
             Scm.DoFade(1000, Fade.In);
             Scm.ClearArea(116.58300018310547f, -796.8209838867188f, 11.42300033569336f, 1.0f, true);
             Scm.SetFixedCameraPosition(116.58300018310547f, -796.8209838867188f, 11.42300033569336f, 0.0f, 0.0f, 0.0f);
             Scm.PointCameraAtPoint(116.572998046875f, -797.8209838867188f, 11.413999557495117f, ChangeCamMode.JumpCut);
-            if (Scm.IsCarDead(l0)) goto L_30B6;
-            Scm.SetCarForwardSpeed(l0, 20.0f);
-            Scm.CarGotoCoordinates(l0, 103.0999984741211f, -832.2999877929688f, 9.317000389099121f);
-            Scm.SetCarCruiseSpeed(l0, 30.0f);
-            Scm.SetCarDrivingStyle(l0, DrivingMode.AvoidCars);
-            l4 = 1;
-            L_30B6:;
+            if (!Scm.IsCarDead(l0)) {
+                Scm.SetCarForwardSpeed(l0, 20.0f);
+                Scm.CarGotoCoordinates(l0, 103.0999984741211f, -832.2999877929688f, 9.317000389099121f);
+                Scm.SetCarCruiseSpeed(l0, 30.0f);
+                Scm.SetCarDrivingStyle(l0, DrivingMode.AvoidCars);
+                l4 = 1;
+            }
             Scm.TimerA = 0;
             Scm.TimerB = 0;
-            L_30C4:;
-            if (!(!(l3 == 8) || !(l4 == 4))) goto L_34FD;
-            Scm.Wait(0);
-            if (!Scm.IsCarDead(l0)) goto L_30F8;
-            goto L_32A4;
-            L_30F8:;
-            if (!(l4 == 1)) goto L_3182;
-            if (!(Scm.TimerB == 30000)) goto L_3182;
-            if (Scm.IsCarDead(l0)) goto L_3182;
-            if (Scm.LocateCar3d(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f, 3.0f, 3.0f, 4.0f, false)) goto L_3182;
-            l4 = 3;
-            Scm.SetCarCoordinates(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f);
-            Scm.SetCarHeading(l0, 206.02139282226562f);
-            L_3182:;
-            if (!(l4 == 1)) goto L_31DF;
-            if (!Scm.LocateCar3d(l0, 103.0999984741211f, -832.2999877929688f, 9.317000389099121f, 4.0f, 4.0f, 4.0f, false)) goto L_31DF;
-            Scm.CarGotoCoordinates(l0, 113.37100219726562f, -819.0780029296875f, 9.317000389099121f);
-            l4 = 2;
-            L_31DF:;
-            if (!(l4 == 2)) goto L_323C;
-            if (!Scm.LocateCar3d(l0, 113.37100219726562f, -819.0780029296875f, 9.317000389099121f, 4.0f, 4.0f, 4.0f, false)) goto L_323C;
-            Scm.CarGotoCoordinates(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f);
-            l4 = 3;
-            L_323C:;
-            if (!(l4 == 3)) goto L_32A4;
-            if (!Scm.LocateCar3d(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f, 3.0f, 3.0f, 4.0f, false)) goto L_32A4;
-            if (Scm.IsCarDead(l0)) goto L_32A4;
-            Scm.SetCarCruiseSpeed(l0, 0.0f);
-            Scm.CarSetIdle(l0);
-            l4 = 4;
-            L_32A4:;
-            if (!Scm.IsCharDead(l2)) goto L_32B4;
-            L_32B4:;
-            if (!(l3 == 0)) goto L_32EE;
-            Scm.PlayMissionAudio(1);
-            Scm.PrintNow("INTRO1", 10000, 1);
-            Scm.TimerA = 0;
-            Scm.TimerB = 0;
-            l3 = 1;
-            L_32EE:;
-            if (!(l6 == 0)) goto L_336C;
-            if (!(Scm.TimerB == 2000)) goto L_336C;
-            Scm.ClearArea(104.87999725341797f, -808.4329833984375f, 12.107999801635742f, 1.0f, false);
-            Scm.SetFixedCameraPosition(104.87999725341797f, -808.4329833984375f, 12.107999801635742f, 0.0f, 0.0f, 0.0f);
-            Scm.PointCameraAtPoint(105.77100372314453f, -808.8880004882812f, 12.090999603271484f, ChangeCamMode.JumpCut);
-            Scm.TimerB = 0;
-            l6 = 1;
-            L_336C:;
-            if (!(l3 == 1)) goto L_33C4;
-            if (!Scm.HasMissionAudioFinished(1)) goto L_33C4;
-            Scm.ClearThisPrint("INTRO1");
-            if (!(Scm.TimerA == 1000)) goto L_33C4;
-            Scm.PlayMissionAudio(2);
-            Scm.PrintNow("INTRO2", 10000, 1);
-            l3 = 2;
-            L_33C4:;
-            if (!(l3 == 2)) goto L_33E9;
-            Scm.LoadMissionAudio(1, "INTRO3");
-            l3 = 3;
-            L_33E9:;
-            if (!(l3 == 3)) goto L_341B;
-            if (!Scm.HasMissionAudioFinished(2)) goto L_341B;
-            Scm.ClearThisPrint("INTRO2");
-            l3 = 4;
-            L_341B:;
-            if (!(l3 == 4)) goto L_3456;
-            if (!Scm.HasMissionAudioLoaded(1)) goto L_3456;
-            Scm.LoadMissionAudio(2, "INTRO4");
-            Scm.TimerA = 0;
-            l3 = 5;
-            L_3456:;
-            if (!(l3 == 5)) goto L_3495;
-            if (!(Scm.TimerA == 900)) goto L_3495;
-            Scm.PlayMissionAudio(1);
-            Scm.PrintNow("INTRO3", 10000, 1);
-            l3 = 6;
-            L_3495:;
-            if (!(l3 == 6)) goto L_34C7;
-            if (!Scm.HasMissionAudioFinished(1)) goto L_34C7;
-            Scm.ClearThisPrint("INTRO3");
-            l3 = 7;
-            L_34C7:;
-            if (!(l3 == 7)) goto L_34F6;
-            if (!Scm.HasMissionAudioLoaded(2)) goto L_34F6;
-            Scm.TimerA = 0;
-            l3 = 8;
-            L_34F6:;
-            goto L_30C4;
-            L_34FD:;
-            if (!(300 > Scm.TimerA)) goto L_353B;
-            Scm.Wait(0);
-            if (!Scm.IsCarDead(l0)) goto L_3524;
-            L_3524:;
-            if (!Scm.IsCharDead(l2)) goto L_3534;
-            L_3534:;
-            goto L_34FD;
-            L_353B:;
+            while (!(l3 == 8) || !(l4 == 4)) {
+                Scm.Wait(0);
+                if (!Scm.IsCarDead(l0)) {
+                    if (l4 == 1 && Scm.TimerB >= 30000 && !Scm.IsCarDead(l0) && !Scm.LocateCar3D(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f, 3.0f, 3.0f, 4.0f, false)) {
+                        l4 = 3;
+                        Scm.SetCarCoordinates(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f);
+                        Scm.SetCarHeading(l0, 206.02139282226562f);
+                    }
+                    if (l4 == 1 && Scm.LocateCar3D(l0, 103.0999984741211f, -832.2999877929688f, 9.317000389099121f, 4.0f, 4.0f, 4.0f, false)) {
+                        Scm.CarGotoCoordinates(l0, 113.37100219726562f, -819.0780029296875f, 9.317000389099121f);
+                        l4 = 2;
+                    }
+                    if (l4 == 2 && Scm.LocateCar3D(l0, 113.37100219726562f, -819.0780029296875f, 9.317000389099121f, 4.0f, 4.0f, 4.0f, false)) {
+                        Scm.CarGotoCoordinates(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f);
+                        l4 = 3;
+                    }
+                    if (l4 == 3 && Scm.LocateCar3D(l0, 132.60000610351562f, -818.2780151367188f, 9.446000099182129f, 3.0f, 3.0f, 4.0f, false) && !Scm.IsCarDead(l0)) {
+                        Scm.SetCarCruiseSpeed(l0, 0.0f);
+                        Scm.CarSetIdle(l0);
+                        l4 = 4;
+                    }
+                }
+                Scm.IsCharDead(l2); // result unused in the original script
+                if (l3 == 0) {
+                    Scm.PlayMissionAudio(1);
+                    Scm.PrintNow("INTRO1", 10000, 1);
+                    Scm.TimerA = 0;
+                    Scm.TimerB = 0;
+                    l3 = 1;
+                }
+                if (l6 == 0 && Scm.TimerB >= 2000) {
+                    Scm.ClearArea(104.87999725341797f, -808.4329833984375f, 12.107999801635742f, 1.0f, false);
+                    Scm.SetFixedCameraPosition(104.87999725341797f, -808.4329833984375f, 12.107999801635742f, 0.0f, 0.0f, 0.0f);
+                    Scm.PointCameraAtPoint(105.77100372314453f, -808.8880004882812f, 12.090999603271484f, ChangeCamMode.JumpCut);
+                    Scm.TimerB = 0;
+                    l6 = 1;
+                }
+                if (l3 == 1 && Scm.HasMissionAudioFinished(1)) {
+                    Scm.ClearThisPrint("INTRO1");
+                    if (Scm.TimerA >= 1000) {
+                        Scm.PlayMissionAudio(2);
+                        Scm.PrintNow("INTRO2", 10000, 1);
+                        l3 = 2;
+                    }
+                }
+                if (l3 == 2) {
+                    Scm.LoadMissionAudio(1, "INTRO3");
+                    l3 = 3;
+                }
+                if (l3 == 3 && Scm.HasMissionAudioFinished(2)) {
+                    Scm.ClearThisPrint("INTRO2");
+                    l3 = 4;
+                }
+                if (l3 == 4 && Scm.HasMissionAudioLoaded(1)) {
+                    Scm.LoadMissionAudio(2, "INTRO4");
+                    Scm.TimerA = 0;
+                    l3 = 5;
+                }
+                if (l3 == 5 && Scm.TimerA >= 900) {
+                    Scm.PlayMissionAudio(1);
+                    Scm.PrintNow("INTRO3", 10000, 1);
+                    l3 = 6;
+                }
+                if (l3 == 6 && Scm.HasMissionAudioFinished(1)) {
+                    Scm.ClearThisPrint("INTRO3");
+                    l3 = 7;
+                }
+                if (l3 == 7 && Scm.HasMissionAudioLoaded(2)) {
+                    Scm.TimerA = 0;
+                    l3 = 8;
+                }
+            }
+            while (300 > Scm.TimerA) {
+                Scm.Wait(0);
+                Scm.IsCarDead(l0); // result unused in the original script
+                Scm.IsCharDead(l2); // result unused in the original script
+            }
             Scm.PlayMissionAudio(2);
             Scm.PrintNow("INTRO4", 10000, 1);
             Scm.Wait(400);
-            if (!Scm.IsCarDead(l0)) goto L_3563;
-            L_3563:;
-            if (!Scm.IsCharDead(l2)) goto L_3573;
-            L_3573:;
-            if (Scm.HasMissionAudioFinished(2)) goto L_35AD;
-            Scm.Wait(0);
-            if (!Scm.IsCarDead(l0)) goto L_3596;
-            L_3596:;
-            if (!Scm.IsCharDead(l2)) goto L_35A6;
-            L_35A6:;
-            goto L_3573;
-            L_35AD:;
+            Scm.IsCarDead(l0); // result unused in the original script
+            Scm.IsCharDead(l2); // result unused in the original script
+            while (!Scm.HasMissionAudioFinished(2)) {
+                Scm.Wait(0);
+                Scm.IsCarDead(l0); // result unused in the original script
+                Scm.IsCharDead(l2); // result unused in the original script
+            }
             Scm.ClearThisPrint("INTRO4");
-            if (Scm.IsCarDead(l0)) goto L_35DF;
-            if (Scm.IsCharDead(l2)) goto L_35DF;
-            Scm.SetCharObjLeaveCar(l2, l0);
-            L_35DF:;
-            if (Scm.IsCharDead(l2)) goto L_362A;
-            L_35EF:;
-            if (!Scm.IsCharInAnyCar(l2)) goto L_362A;
-            Scm.Wait(0);
-            if (!Scm.IsCarDead(l0)) goto L_3613;
-            L_3613:;
-            if (!Scm.IsCharDead(l2)) goto L_3623;
-            L_3623:;
-            goto L_35EF;
-            L_362A:;
-            if (Scm.IsCharDead(l2)) goto L_3650;
-            Scm.SetCharObjGotoCoordOnFoot(l2, 125.80899810791016f, -815.2630004882812f);
-            Scm.SetCharRunning(l2, true);
-            L_3650:;
+            if (!Scm.IsCarDead(l0) && !Scm.IsCharDead(l2)) {
+                Scm.SetCharObjLeaveCar(l2, l0);
+            }
+            if (!Scm.IsCharDead(l2)) {
+                while (Scm.IsCharInAnyCar(l2)) {
+                    Scm.Wait(0);
+                    Scm.IsCarDead(l0); // result unused in the original script
+                    Scm.IsCharDead(l2); // result unused in the original script
+                }
+            }
+            if (!Scm.IsCharDead(l2)) {
+                Scm.SetCharObjGotoCoordOnFoot(l2, 125.80899810791016f, -815.2630004882812f);
+                Scm.SetCharRunning(l2, true);
+            }
             Scm.TimerA = 0;
-            L_3657:;
-            if (!(1500 > Scm.TimerA)) goto L_3685;
-            Scm.Wait(0);
-            if (Scm.IsCharDead(l2)) goto L_367E;
-            L_367E:;
-            goto L_3657;
-            L_3685:;
+            while (1500 > Scm.TimerA) {
+                Scm.Wait(0);
+                if (Scm.IsCharDead(l2)) { } // result unused in the original script
+            }
             Scm.ClearArea(113.65499877929688f, -815.8140258789062f, 11.029000282287598f, 1.0f, false);
             Scm.SetFixedCameraPosition(113.65499877929688f, -815.8140258789062f, 11.029000282287598f, 0.0f, 0.0f, 0.0f);
             Scm.PointCameraAtPoint(114.30699920654297f, -816.5700073242188f, 11.083000183105469f, ChangeCamMode.JumpCut);
-            if (Scm.IsCharDead(l2)) goto L_36FE;
-            Scm.CharSetIdle(l2);
-            Scm.SetCharObjNoObj(l2);
-            Scm.SetCharCoordinates(l2, 125.80899810791016f, -815.2630004882812f, 9.444000244140625f);
-            L_36FE:;
-            if (Scm.IsCharDead(l2)) goto L_372B;
-            Scm.SetCharObjGotoCoordOnFoot(l2, 116.26899719238281f, -825.43798828125f);
-            Scm.SetCharRunning(l2, true);
-            l5 = 1;
-            L_372B:;
-            if (Scm.IsCharInAnyCar(Globals.player_char)) goto L_3760;
-            Scm.SetCharCoordinates(Globals.player_char, 136.45700073242188f, -817.3699951171875f, 9.4399995803833f);
-            Scm.SetCharHeading(Globals.player_char, 225.4949951171875f);
-            goto L_3774;
-            L_3760:;
-            Scm.WarpCharFromCarToCoord(Globals.player_char, 136.45700073242188f, -817.3699951171875f, 9.4399995803833f);
-            L_3774:;
-            if (Scm.IsCharInAnyCar(Globals.player_char)) goto L_378E;
-            Scm.SetCharHeading(Globals.player_char, 225.4949951171875f);
-            L_378E:;
+            if (!Scm.IsCharDead(l2)) {
+                Scm.CharSetIdle(l2);
+                Scm.SetCharObjNoObj(l2);
+                Scm.SetCharCoordinates(l2, 125.80899810791016f, -815.2630004882812f, 9.444000244140625f);
+            }
+            if (!Scm.IsCharDead(l2)) {
+                Scm.SetCharObjGotoCoordOnFoot(l2, 116.26899719238281f, -825.43798828125f);
+                Scm.SetCharRunning(l2, true);
+                l5 = 1;
+            }
+            if (!Scm.IsCharInAnyCar(Globals.player_char)) {
+                Scm.SetCharCoordinates(Globals.player_char, 136.45700073242188f, -817.3699951171875f, 9.4399995803833f);
+                Scm.SetCharHeading(Globals.player_char, 225.4949951171875f);
+            } else {
+                Scm.WarpCharFromCarToCoord(Globals.player_char, 136.45700073242188f, -817.3699951171875f, 9.4399995803833f);
+            }
+            if (!Scm.IsCharInAnyCar(Globals.player_char)) {
+                Scm.SetCharHeading(Globals.player_char, 225.4949951171875f);
+            }
             Scm.TimerB = 0;
-            L_3795:;
-            if (!(1350 > Scm.TimerB)) goto L_37C3;
-            Scm.Wait(0);
-            if (Scm.IsCharDead(l2)) goto L_37BC;
-            L_37BC:;
-            goto L_3795;
-            L_37C3:;
+            while (1350 > Scm.TimerB) {
+                Scm.Wait(0);
+                if (Scm.IsCharDead(l2)) { } // result unused in the original script
+            }
             Scm.SetCameraBehindPlayer();
             Scm.RestoreCameraJumpcut();
             Scm.ClearThisPrint("INTRO4");
@@ -4775,9 +3372,9 @@ namespace VcFlavour
             Scm.DeleteChar(l2);
             Globals.flag_shared_35 = 1;
             Globals.mission_flag = 0;
-            if (Scm.IsCarDead(l0)) goto L_3837;
-            Scm.SetCarProofs(l0, false, false, false, false, false);
-            L_3837:;
+            if (!Scm.IsCarDead(l0)) {
+                Scm.SetCarProofs(l0, false, false, false, false, false);
+            }
             Scm.UnloadSpecialCharacter(10);
             Scm.MarkModelAsNoLongerNeeded(Model.ADMIRAL);
             Scm.MarkModelAsNoLongerNeeded(Model.FAGGIO);
@@ -4790,19 +3387,1195 @@ namespace VcFlavour
             return;
         }
 
+        // The opening cutscenes. Every wait loop polls UpdateSkipState();
+        // if the player skips, control returns to Main, which resumes at
+        // the post-cutscene splash (was @L_2D16 in the original).
+        private static void PlayIntroCutscenes()
+        {
+            while (!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasSpecialCharacterLoaded(3) || !Scm.HasSpecialCharacterLoaded(4) || !Scm.HasSpecialCharacterLoaded(5)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            while (!Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02) || !Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.CUTOBJ04)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.LoadCutscene("INT_A");
+            Scm.SetCutsceneOffset(231.41099548339844f, -1277.70703125f, 19.069000244140625f);
+            Scm.SetNearClip(0.10000000149011612f);
+            Globals.object_shared_02 = Scm.CreateCutsceneObject(Model.SPECIAL01);
+            Scm.SetCutsceneAnim(Globals.object_shared_02, "SFRENDA");
+            Globals.object_intro_01 = Scm.CreateCutsceneObject(Model.SPECIAL02);
+            Scm.SetCutsceneAnim(Globals.object_intro_01, "SFRENDB");
+            Globals.object_shared_07 = Scm.CreateCutsceneObject(Model.SPECIAL03);
+            Scm.SetCutsceneAnim(Globals.object_shared_07, "CSSONNY");
+            Globals.object_shared_03 = Scm.CreateCutsceneObject(Model.SPECIAL04);
+            Scm.SetCutsceneAnim(Globals.object_shared_03, "SGOONA");
+            Globals.object_shared_04 = Scm.CreateCutsceneObject(Model.SPECIAL05);
+            Scm.SetCutsceneAnim(Globals.object_shared_04, "SGOONB");
+            Globals.object_intro_08 = Scm.CreateCutsceneObject(Model.CUTOBJ01);
+            Scm.SetCutsceneAnim(Globals.object_intro_08, "SVNTRAY");
+            Globals.object_intro_09 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
+            Scm.SetCutsceneAnim(Globals.object_intro_09, "DRINK01");
+            Globals.object_intro_10 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
+            Scm.SetCutsceneAnim(Globals.object_intro_10, "DRINK02");
+            Globals.object_intro_11 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
+            Scm.SetCutsceneAnim(Globals.object_intro_11, "DRINK03");
+            Globals.object_shared_01 = Scm.CreateCutsceneObject(Model.CUTOBJ03);
+            Scm.SetCutsceneAnim(Globals.object_shared_01, "MBTBEMP");
+            Globals.object_shared_49 = Scm.CreateCutsceneObject(Model.CUTOBJ04);
+            Scm.SetCutsceneAnim(Globals.object_shared_49, "SCHAIR");
+            Scm.DoFade(2000, Fade.In);
+            Scm.SwitchRubbish(false);
+            Scm.SwitchStreaming(true);
+            Scm.StartCutscene();
+            Globals.cutscene_time = Scm.GetCutsceneTime();
+            while (1246 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_A", 10000, 1);
+            while (2708 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_B", 10000, 1);
+            while (4796 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_C", 10000, 1);
+            while (7086 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_D", 10000, 1);
+            while (8404 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_E", 10000, 1);
+            while (10756 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_F", 10000, 1);
+            while (12614 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_G", 10000, 1);
+            while (14813 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_H", 10000, 1);
+            while (18741 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_I", 10000, 1);
+            while (21294 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_J", 10000, 1);
+            while (24399 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_K", 10000, 1);
+            while (26496 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_L", 10000, 1);
+            while (31264 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_M", 10000, 1);
+            while (32904 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_N", 10000, 1);
+            while (35200 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_O", 10000, 1);
+            while (36522 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_P", 10000, 1);
+            while (41196 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_Q", 10000, 1);
+            while (45232 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_R", 10000, 1);
+            while (48992 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_S", 10000, 1);
+            while (50206 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_T", 10000, 1);
+            while (52509 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_U", 10000, 1);
+            while (54340 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_V", 10000, 1);
+            while (56291 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_W", 10000, 1);
+            while (57900 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_X", 10000, 1);
+            while (61168 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_Y", 10000, 1);
+            while (62518 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_Z", 10000, 1);
+            while (64169 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_A1", 10000, 1);
+            while (65706 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT1_A2", 10000, 1);
+            while (66784 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearPrints();
+            while (68240 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearPrints();
+            Scm.SetFadingColour(1, 1, 1);
+            Scm.DoFade(2000, Fade.Out);
+            while (Scm.GetFadingStatus()) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearCutscene();
+            Scm.ClearExtraColours(false);
+            Scm.SwitchRubbish(true);
+            Scm.UnloadSpecialCharacter(1);
+            Scm.UnloadSpecialCharacter(2);
+            Scm.UnloadSpecialCharacter(3);
+            Scm.UnloadSpecialCharacter(4);
+            Scm.UnloadSpecialCharacter(5);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ01);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ02);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ03);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ04);
+            Scm.SetVisibilityOfClosestObjectOfType(231.39999389648438f, -1277.699951171875f, 19.0f, 50.0f, Model.MOB_MOBROOM2, false);
+            Scm.SetVisibilityOfClosestObjectOfType(231.39999389648438f, -1277.699951171875f, 19.0f, 50.0f, Model.MOB_DETAILSB, false);
+            Scm.SetAreaVisible(Vis.MainMap);
+            Scm.Wait(0);
+            Scm.DisableCutsceneShadows();
+            Scm.LoadSplashScreen("INTRO2");
+            Scm.SetFadingColour(2, 2, 2);
+            Scm.Wait(250);
+            Scm.ForceWeatherNow(Weather.ExtraSunny);
+            Scm.SetTimeOfDay(12, 0);
+            Scm.LoadSpecialCharacter(1, "CSKEN");
+            Scm.LoadSpecialCharacter(2, "CSPLAY");
+            Scm.LoadSpecialCharacter(3, "SGOONA");
+            Scm.LoadSpecialCharacter(4, "SGOONB");
+            Scm.LoadSpecialModel(Model.CUTOBJ01, "AIRPLAN");
+            Scm.LoadSpecialModel(Model.CUTOBJ02, "MERCED");
+            Scm.LoadSpecialModel(Model.CUTOBJ03, "BRFCASE");
+            Scm.RequestModel(Model.AP_RADAR1_01);
+            Scm.RequestModel(Model.VEG_PALM04);
+            Scm.LoadScene(-1592.0f, -545.0f, 15.0f);
+            Scm.RequestCollision(-1654.0f, -1388.0f);
+            Scm.LoadAllModelsNow();
+            while (!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasSpecialCharacterLoaded(3) || !Scm.HasSpecialCharacterLoaded(4) || !Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            while (!Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.AP_RADAR1_01) || !Scm.HasModelLoaded(Model.VEG_PALM04)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.SetPlayerCoordinates(Globals.player, -1654.0f, -1388.0f, -100.0f);
+            Scm.LoadUncompressedAnim("AIRPLAN");
+            Scm.LoadCutscene("INT_M");
+            Scm.SetCutsceneOffset(-1601.5360107421875f, -548.2979736328125f, 13.678999900817871f);
+            Globals.cutscene_object_2 = Scm.CreateCutsceneObject(Model.SPECIAL01);
+            Scm.SetCutsceneAnim(Globals.cutscene_object_2, "CSKEN");
+            Globals.cutscene_object = Scm.CreateCutsceneObject(Model.SPECIAL02);
+            Scm.SetCutsceneAnim(Globals.cutscene_object, "CSPLAY");
+            Globals.object_shared_03 = Scm.CreateCutsceneObject(Model.SPECIAL03);
+            Scm.SetCutsceneAnim(Globals.object_shared_03, "SGOONA");
+            Globals.object_shared_04 = Scm.CreateCutsceneObject(Model.SPECIAL04);
+            Scm.SetCutsceneAnim(Globals.object_shared_04, "SGOONB");
+            Globals.object_intro_13 = Scm.CreateCutsceneObject(Model.CUTOBJ01);
+            Scm.SetCutsceneAnim(Globals.object_intro_13, "AIRPLAN");
+            Globals.object_intro_12 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
+            Scm.SetCutsceneAnim(Globals.object_intro_12, "MERCED");
+            Scm.SetObjectDrawLast(Globals.object_intro_12, true);
+            Globals.object_intro_02 = Scm.CreateCutsceneObject(Model.CUTOBJ03);
+            Scm.SetCutsceneAnim(Globals.object_intro_02, "BRFCASE");
+            Scm.AttachCutsceneObjectToComponent(Globals.cutscene_object_2, Globals.object_intro_12, "MERCBOD");
+            Scm.AttachCutsceneObjectToComponent(Globals.cutscene_object, Globals.object_intro_12, "MERCBOD");
+            Scm.AttachCutsceneObjectToComponent(Globals.object_shared_03, Globals.object_intro_12, "MERCBOD");
+            Scm.AttachCutsceneObjectToComponent(Globals.object_shared_04, Globals.object_intro_12, "MERCBOD");
+            Scm.DoFade(3000, Fade.In);
+            Scm.SwitchStreaming(true);
+            Scm.StartCutscene();
+            Globals.cutscene_time = Scm.GetCutsceneTime();
+            while (4860 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_A", 10000, 1);
+            while (6400 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.SetNearClip(0.15000000596046448f);
+            while (9600 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_B", 10000, 1);
+            while (12342 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_C", 10000, 1);
+            while (15840 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_D", 10000, 1);
+            while (17556 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_E", 10000, 1);
+            while (20640 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_F", 10000, 1);
+            while (23018 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_G", 10000, 1);
+            while (25863 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_H", 10000, 1);
+            while (26000 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            while (27624 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_I", 10000, 1);
+            while (29348 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT2_J", 10000, 1);
+            while (30300 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearPrints();
+            Scm.SetFadingColour(1, 1, 1);
+            Scm.DoFade(2000, Fade.Out);
+            while (Scm.GetFadingStatus()) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                if (Globals.cutscene_time >= 33300) {
+                    Scm.ClearPrints();
+                }
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearPrints();
+            Scm.ClearCutscene();
+            Scm.UnloadSpecialCharacter(1);
+            Scm.UnloadSpecialCharacter(2);
+            Scm.UnloadSpecialCharacter(3);
+            Scm.UnloadSpecialCharacter(4);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ01);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ02);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ03);
+            Scm.MarkModelAsNoLongerNeeded(Model.AP_RADAR1_01);
+            Scm.MarkModelAsNoLongerNeeded(Model.VEG_PALM04);
+            Scm.Wait(0);
+            Scm.LoadSplashScreen("INTRO3");
+            Scm.SetFadingColour(2, 2, 2);
+            Scm.Wait(250);
+            Scm.ForceWeatherNow(Weather.Sunny);
+            Scm.SetTimeOfDay(20, 0);
+            Scm.LoadSpecialCharacter(1, "CSKEN");
+            Scm.LoadSpecialCharacter(2, "CSDEAL");
+            Scm.LoadSpecialCharacter(3, "SGOONA");
+            Scm.LoadSpecialCharacter(4, "SGOONB");
+            Scm.LoadSpecialCharacter(5, "CSASSA");
+            Scm.LoadSpecialCharacter(6, "CSASSB");
+            Scm.LoadSpecialCharacter(7, "CSASSC");
+            Scm.LoadSpecialCharacter(8, "CSPLAY");
+            Scm.LoadSpecialModel(Model.CUTOBJ01, "CS_CHOP");
+            Scm.LoadSpecialModel(Model.CUTOBJ02, "BRFCASE");
+            Scm.LoadSpecialModel(Model.CUTOBJ03, "DELCASE");
+            Scm.LoadSpecialModel(Model.CUTOBJ04, "MERCED");
+            Scm.RequestModel(Model.DOC_CRANEEGGS04);
+            Scm.RequestModel(Model.DOC_CRANE_CAB04);
+            Scm.RequestModel(Model.DOCKFUEL07);
+            Scm.RequestCollision(-692.0f, -1559.0f);
+            Scm.SetPlayerCoordinates(Globals.player, -683.14501953125f, -1581.7469482421875f, 11.529999732971191f);
+            Scm.LoadScene(-692.0f, -1559.0f, 12.0f);
+            Scm.SetExtraColours(14, false);
+            Scm.LoadAllModelsNow();
+            while (!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasSpecialCharacterLoaded(3) || !Scm.HasSpecialCharacterLoaded(4) || !Scm.HasSpecialCharacterLoaded(5) || !Scm.HasSpecialCharacterLoaded(6)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            while (!Scm.HasSpecialCharacterLoaded(7) || !Scm.HasSpecialCharacterLoaded(8) || !Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02) || !Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.CUTOBJ04)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            while (!Scm.HasModelLoaded(Model.DOC_CRANEEGGS04) || !Scm.HasModelLoaded(Model.DOC_CRANE_CAB04) || !Scm.HasModelLoaded(Model.DOCKFUEL07)) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.LoadUncompressedAnim("CS_CHOP");
+            Scm.LoadCutscene("INT_D");
+            Scm.SetCutsceneOffset(-690.0f, -1568.0f, 11.4399995803833f);
+            Globals.cutscene_object = Scm.CreateCutsceneObject(Model.SPECIAL08);
+            Scm.SetCutsceneAnim(Globals.cutscene_object, "CSPLAY");
+            Globals.cutscene_object_2 = Scm.CreateCutsceneObject(Model.SPECIAL01);
+            Scm.SetCutsceneAnim(Globals.cutscene_object_2, "CSKEN");
+            Globals.object_intro_04 = Scm.CreateCutsceneObject(Model.SPECIAL02);
+            Scm.SetCutsceneAnim(Globals.object_intro_04, "CSDEAL");
+            Globals.object_shared_03 = Scm.CreateCutsceneObject(Model.SPECIAL03);
+            Scm.SetCutsceneAnim(Globals.object_shared_03, "SGOONA");
+            Globals.object_shared_04 = Scm.CreateCutsceneObject(Model.SPECIAL04);
+            Scm.SetCutsceneAnim(Globals.object_shared_04, "SGOONB");
+            Globals.object_intro_05 = Scm.CreateCutsceneObject(Model.SPECIAL05);
+            Scm.SetCutsceneAnim(Globals.object_intro_05, "CSASSA");
+            Globals.object_intro_06 = Scm.CreateCutsceneObject(Model.SPECIAL06);
+            Scm.SetCutsceneAnim(Globals.object_intro_06, "CSASSB");
+            Globals.object_intro_07 = Scm.CreateCutsceneObject(Model.SPECIAL07);
+            Scm.SetCutsceneAnim(Globals.object_intro_07, "CSASSC");
+            Globals.object_shared_11 = Scm.CreateCutsceneObject(Model.CUTOBJ01);
+            Scm.SetCutsceneAnim(Globals.object_shared_11, "CS_CHOP");
+            Scm.SetObjectDrawLast(Globals.object_shared_11, true);
+            Globals.object_intro_02 = Scm.CreateCutsceneObject(Model.CUTOBJ02);
+            Scm.SetCutsceneAnim(Globals.object_intro_02, "BRFCASE");
+            Globals.object_intro_03 = Scm.CreateCutsceneObject(Model.CUTOBJ03);
+            Scm.SetCutsceneAnim(Globals.object_intro_03, "DELCASE");
+            Globals.object_intro_12 = Scm.CreateCutsceneObject(Model.CUTOBJ04);
+            Scm.SetCutsceneAnim(Globals.object_intro_12, "MERCED");
+            Scm.SetObjectDrawLast(Globals.object_intro_12, true);
+            Scm.AttachCutsceneObjectToComponent(Globals.cutscene_object_2, Globals.object_intro_12, "MERCBOD");
+            Scm.DoFade(2000, Fade.In);
+            Scm.SwitchStreaming(true);
+            Scm.StartCutscene();
+            Globals.cutscene_time = Scm.GetCutsceneTime();
+            while (6500 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (8743 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            Scm.PrintNow("INT3_A", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (10784 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            Scm.PrintNow("INT3_B", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (12040 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            Scm.PrintNow("INT3_C", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (14488 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            Scm.PrintNow("INT3_D", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (17072 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.ClearThisPrint("INT3_D");
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (20384 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (23200 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (35596 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.PrintNow("INT3_G", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (36430 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.PrintNow("INT3_H", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (39824 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.PrintNow("INT3_M", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (40896 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.PrintNow("INT3_I", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (42518 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.PrintNow("INT3_J", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (46872 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            Scm.PrintNow("INT3_K", 10000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51100 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51233 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51366 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51500 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+                Scm.AddBigGunFlash(-696.52197265625f, -1577.4320068359375f, 12.826000213623047f, -696.4920043945312f, -1577.35400390625f, 12.8149995803833f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51633 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51733 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-696.4420166015625f, -1577.3580322265625f, 12.765000343322754f, -696.4019775390625f, -1577.2860107421875f, 12.74899959564209f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51766 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51900 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (51966 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-696.447998046875f, -1577.2740478515625f, 12.666000366210938f, -696.405029296875f, -1577.2060546875f, 12.642999649047852f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (52033 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+                Scm.AddBigGunFlash(-696.35400390625f, -1578.1219482421875f, 13.0600004196167f, -695.8359985351562f, -1577.301025390625f, 13.020000457763672f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            while (52166 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 4);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
+            while (52200 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-696.43701171875f, -1577.2349853515625f, 12.657999992370605f, -696.3909912109375f, -1577.1700439453125f, 12.635000228881836f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 6);
+            while (52256 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            Scm.PrintNow("INT3_N", 2000, 1);
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52300 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52433 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+                Scm.AddBigGunFlash(-696.4390258789062f, -1577.2220458984375f, 12.652999877929688f, -696.3909912109375f, -1577.157958984375f, 12.630000114440918f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52566 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52666 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-696.4650268554688f, -1577.18896484375f, 12.64799976348877f, -696.4190063476562f, -1577.2130126953125f, 12.625f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52700 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52833 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52900 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-696.5759887695312f, -1577.1109619140625f, 12.685999870300293f, -696.5380249023438f, -1577.0400390625f, 12.666999816894531f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (52966 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (53100 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (53133 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-696.6920166015625f, -1577.050048828125f, 12.70300006866455f, -696.6649780273438f, -1576.9730224609375f, 12.685999870300293f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (53233 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (53366 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+                Scm.AddBigGunFlash(-696.35400390625f, -1578.1219482421875f, 13.0600004196167f, -695.8359985351562f, -1577.301025390625f, 13.020000457763672f);
+                Scm.AddBigGunFlash(-696.781005859375f, -1576.8990478515625f, 12.687999725341797f, -696.676025390625f, -1576.91796875f, 12.670000076293945f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (53500 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            if (!Scm.WasCutsceneSkipped()) {
+                Scm.AddBigGunFlash(-684.2219848632812f, -1577.18896484375f, 12.383999824523926f, -695.416015625f, -1576.6259765625f, 12.414999961853027f);
+            }
+            Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            while (57000 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+                Scm.CreateDustEffectForCutsceneHeli(Globals.object_shared_11, 10.0f, 8);
+            }
+            while (58736 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.PrintNow("INT3_L", 10000, 1);
+            while (60800 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearPrints();
+            while (63212 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.SetFadingColour(1, 1, 1);
+            Scm.DoFade(2000, Fade.Out);
+            while (Scm.GetFadingStatus()) {
+                Scm.Wait(0);
+                UpdateSkipState();
+                if (Globals.state_shared_01 == 2) {
+                    return;
+                }
+            }
+            Scm.ClearExtraColours(false);
+            Scm.ClearCutscene();
+            Scm.UnloadSpecialCharacter(1);
+            Scm.UnloadSpecialCharacter(2);
+            Scm.UnloadSpecialCharacter(3);
+            Scm.UnloadSpecialCharacter(4);
+            Scm.UnloadSpecialCharacter(5);
+            Scm.UnloadSpecialCharacter(6);
+            Scm.UnloadSpecialCharacter(7);
+            Scm.UnloadSpecialCharacter(8);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ01);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ02);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ03);
+            Scm.MarkModelAsNoLongerNeeded(Model.CUTOBJ04);
+            Scm.MarkModelAsNoLongerNeeded(Model.DOC_CRANEEGGS04);
+            Scm.MarkModelAsNoLongerNeeded(Model.DOC_CRANE_CAB04);
+            Scm.MarkModelAsNoLongerNeeded(Model.DOCKFUEL07);
+            Scm.Wait(0);
+        }
+
         // Subroutine @L_386B: polled every frame while a cutscene runs.
         // $52: 0 = waiting for the player to release the skip buttons,
         //      1 = armed, 2 = cutscene skipped (engine flag seen).
         private static void UpdateSkipState()
         {
-            if (!(Globals.state_shared_01 == 0)) goto L_389B;
-            if (!(!Scm.IsButtonPressed(Pad.Pad1, Button.Cross) && !Scm.IsButtonPressed(Pad.Pad1, Button.Start))) goto L_389B;
-            Globals.state_shared_01 = 1;
-            L_389B:;
-            if (!(Globals.state_shared_01 == 1)) goto L_38C1;
-            if (!Scm.WasCutsceneSkipped()) goto L_38C1;
-            Globals.state_shared_01 = 2;
-            L_38C1:;
+            if (Globals.state_shared_01 == 0 && !Scm.IsButtonPressed(Pad.Pad1, Button.Cross) && !Scm.IsButtonPressed(Pad.Pad1, Button.Start)) {
+                Globals.state_shared_01 = 1;
+            }
+            if (Globals.state_shared_01 == 1 && Scm.WasCutsceneSkipped()) {
+                Globals.state_shared_01 = 2;
+            }
             return;
         }
     }
@@ -4832,11 +4605,9 @@ namespace VcFlavour
             Scm.LoadSpecialModel(Model.CUTOBJ04, "SCHAIR");
             Scm.LoadAllModelsNow();
             Scm.LoadScene(231.39999389648438f, -1277.699951171875f, 19.0f);
-            L_D9:;
-            if (!(!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02) || !Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.CUTOBJ04))) goto L_10B;
-            Scm.Wait(0);
-            goto L_D9;
-            L_10B:;
+            while (!Scm.HasSpecialCharacterLoaded(1) || !Scm.HasSpecialCharacterLoaded(2) || !Scm.HasModelLoaded(Model.CUTOBJ01) || !Scm.HasModelLoaded(Model.CUTOBJ02) || !Scm.HasModelLoaded(Model.CUTOBJ03) || !Scm.HasModelLoaded(Model.CUTOBJ04)) {
+                Scm.Wait(0);
+            }
             Scm.LoadCutscene("INT_B");
             Scm.SetCutsceneOffset(231.41099548339844f, -1277.70703125f, 19.069000244140625f);
             Scm.SetNearClip(0.10000000149011612f);
@@ -4857,173 +4628,125 @@ namespace VcFlavour
             Scm.SwitchStreaming(true);
             Scm.StartCutscene();
             Globals.cutscene_time = Scm.GetCutsceneTime();
-            L_1BF:;
-            if (!(6133 > Globals.cutscene_time)) goto L_1E2;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_1BF;
-            L_1E2:;
+            while (6133 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_B", 10000, 1);
-            L_1F1:;
-            if (!(7184 > Globals.cutscene_time)) goto L_214;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_1F1;
-            L_214:;
+            while (7184 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_A", 10000, 1);
-            L_223:;
-            if (!(13174 > Globals.cutscene_time)) goto L_246;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_223;
-            L_246:;
+            while (13174 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_C", 10000, 1);
-            L_255:;
-            if (!(15932 > Globals.cutscene_time)) goto L_278;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_255;
-            L_278:;
+            while (15932 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_D", 10000, 1);
-            L_287:;
-            if (!(19096 > Globals.cutscene_time)) goto L_2AA;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_287;
-            L_2AA:;
+            while (19096 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_E", 10000, 1);
-            L_2B9:;
-            if (!(20800 > Globals.cutscene_time)) goto L_2DC;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_2B9;
-            L_2DC:;
+            while (20800 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_F", 10000, 1);
-            L_2EB:;
-            if (!(23076 > Globals.cutscene_time)) goto L_30E;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_2EB;
-            L_30E:;
+            while (23076 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_G", 10000, 1);
-            L_31D:;
-            if (!(25352 > Globals.cutscene_time)) goto L_340;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_31D;
-            L_340:;
+            while (25352 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_H", 10000, 1);
-            L_34F:;
-            if (!(29045 > Globals.cutscene_time)) goto L_372;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_34F;
-            L_372:;
+            while (29045 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_I", 10000, 1);
-            L_381:;
-            if (!(32884 > Globals.cutscene_time)) goto L_3A6;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_381;
-            L_3A6:;
+            while (32884 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_J", 10000, 1);
-            L_3B5:;
-            if (!(36816 > Globals.cutscene_time)) goto L_3DA;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_3B5;
-            L_3DA:;
+            while (36816 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_K", 10000, 1);
-            L_3E9:;
-            if (!(39960 > Globals.cutscene_time)) goto L_40E;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_3E9;
-            L_40E:;
+            while (39960 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_L", 10000, 1);
-            L_41D:;
-            if (!(46333 > Globals.cutscene_time)) goto L_442;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_41D;
-            L_442:;
+            while (46333 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_M", 10000, 1);
-            L_451:;
-            if (!(49904 > Globals.cutscene_time)) goto L_476;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_451;
-            L_476:;
+            while (49904 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_N", 10000, 1);
-            L_485:;
-            if (!(51480 > Globals.cutscene_time)) goto L_4AA;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_485;
-            L_4AA:;
+            while (51480 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_O", 10000, 1);
-            L_4B9:;
-            if (!(54960 > Globals.cutscene_time)) goto L_4DE;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_4B9;
-            L_4DE:;
+            while (54960 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_P", 10000, 1);
-            L_4ED:;
-            if (!(56800 > Globals.cutscene_time)) goto L_512;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_4ED;
-            L_512:;
+            while (56800 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_Q", 10000, 1);
-            L_521:;
-            if (!(61668 > Globals.cutscene_time)) goto L_546;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_521;
-            L_546:;
+            while (61668 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_R", 10000, 1);
-            L_555:;
-            if (!(64584 > Globals.cutscene_time)) goto L_57A;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_555;
-            L_57A:;
+            while (64584 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_S", 10000, 1);
-            L_589:;
-            if (!(69612 > Globals.cutscene_time)) goto L_5AE;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_589;
-            L_5AE:;
+            while (69612 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_T", 10000, 1);
-            L_5BD:;
-            if (!(72104 > Globals.cutscene_time)) goto L_5E2;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_5BD;
-            L_5E2:;
+            while (72104 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.PrintNow("INTB_U", 10000, 1);
-            L_5F1:;
-            if (!(75104 > Globals.cutscene_time)) goto L_616;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_5F1;
-            L_616:;
+            while (75104 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.ClearPrints();
-            L_618:;
-            if (!(77104 > Globals.cutscene_time)) goto L_63D;
-            Scm.Wait(0);
-            Globals.cutscene_time = Scm.GetCutsceneTime();
-            goto L_618;
-            L_63D:;
+            while (77104 > Globals.cutscene_time) {
+                Scm.Wait(0);
+                Globals.cutscene_time = Scm.GetCutsceneTime();
+            }
             Scm.DoFade(1500, Fade.Out);
             Scm.ClearPrints();
-            L_646:;
-            if (!Scm.GetFadingStatus()) goto L_65E;
-            Scm.Wait(0);
-            goto L_646;
-            L_65E:;
+            while (Scm.GetFadingStatus()) {
+                Scm.Wait(0);
+            }
             Scm.SwitchRubbish(true);
             Scm.ClearCutscene();
             Scm.LoadScene(237.8000030517578f, -1279.9000244140625f, 10.0f);
