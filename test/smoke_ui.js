@@ -101,6 +101,10 @@ function fire(id, type, ev) {
   const el = documentStub.getElementById(id);
   el._fire(type, ev || {});
 }
+function gotoSection(id) {
+  fire("secNav", "click", { target: { nodeType: 1, tagName: "BUTTON", parentNode: null,
+    getAttribute(k) { return k === "data-sec" ? id : null; } } });
+}
 
 const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
 
@@ -119,8 +123,10 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   await tick(1500);
   ok((ids.fileBadge.innerHTML || "").indexOf("main.scm") >= 0, "file badge shows main.scm",
     ids.fileBadge.innerHTML.slice(0, 80));
-  ok(ids.secSelect.children.length === 99, "99 sections in picker",
-    "got " + ids.secSelect.children.length);
+  ok(ids.secCount.textContent === "99 sections", "navigator lists 99 sections",
+    "got " + JSON.stringify(ids.secCount.textContent));
+  ok((ids.fileMeta.textContent || "").indexOf("99 sections") >= 0, "status bar shows file meta",
+    "got " + JSON.stringify(ids.fileMeta.textContent));
   ok((ids.edStatus.textContent || "").indexOf("MAIN") >= 0, "editor status shows MAIN");
   ok((ids.structRoot.innerHTML || "").indexOf("Missions (97)") >= 0, "structure shows 97 missions");
   ok((ids.hexDump.innerHTML || "").length > 1000, "hex dump rendered");
@@ -161,8 +167,13 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   ok(ids.searchResults.innerHTML.indexOf("MAIN") >= 0, "search hits MAIN section");
 
   console.log("== navigation & edit ==");
-  ids.secSelect.value = "mission:0";
-  fire("secSelect", "change");
+  ids.secFilter.value = "mission";
+  fire("secFilter", "input");
+  ok(ids.secCount.textContent === "97 of 99 sections", "section filter narrows list",
+    "got " + JSON.stringify(ids.secCount.textContent));
+  ids.secFilter.value = "";
+  fire("secFilter", "input");
+  gotoSection("mission:0");
   ok((ids.edStatus.textContent || "").indexOf("MISSION 0") >= 0, "jumped to MISSION 0");
   fire("btnEdit", "click");
   const before = ids.editArea.value;
@@ -182,6 +193,11 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   ids.hexRegion.value = 0;
   fire("hexRegion", "change");
   ok(ids.hexDump.innerHTML.length > 1000, "hex region switch renders");
+  ids.misFilter.value = "bank";
+  fire("misFilter", "input");
+  ok(true, "mission filter did not throw");
+  ids.misFilter.value = "";
+  fire("misFilter", "input");
 
   console.log("== opcode detail & insert ==");
   const fakeOp = { dataset: { id: "165" }, _l: {}, addEventListener(t, fn) { this._l[t] = fn; } };
@@ -197,7 +213,8 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
     ids.toast.textContent.slice(0, 90));
 
   console.log("== mission row click ==");
-  const fakeMis = { dataset: { mis: "5" }, _l: {}, addEventListener(t, fn) { this._l[t] = fn; } };
+  const fakeMis = { dataset: { mis: "5" }, style: {}, textContent: "@MISSION_5",
+    _l: {}, addEventListener(t, fn) { this._l[t] = fn; } };
   ids.structRoot.querySelectorAll = () => [fakeMis];
   fire("btnBuild", "click");
   await tick(100);
@@ -205,8 +222,7 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   ok((ids.edStatus.textContent || "").indexOf("MISSION 5") >= 0, "mission row opens MISSION 5");
 
   console.log("== build failure path ==");
-  ids.secSelect.value = "main";
-  fire("secSelect", "change");
+  gotoSection("main");
   fire("btnEdit", "click");
   ids.editArea.value = ids.editArea.value + "\nBOGUS_OPCODE @FOO\n";
   fire("btnEdit", "click");
@@ -226,8 +242,6 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   fire("btnBuild", "click");
   await tick(100);
   ok((ids.asmState.innerHTML || "").indexOf("assembled") >= 0, "repaired source assembles");
-  console.log("  [dbg repair]", ids.asmState.innerHTML.replace(/<[^>]+>/g, ""),
-    "|", (ids.problems.innerHTML || "").slice(0, 300));
 
   console.log("== downloads & keys ==");
   fire("btnDlSrc", "click");
@@ -267,8 +281,8 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   srcInput.files = [{ name: "main_src.txt" }];
   srcInput.onchange();
   await tick(50);
-  ok(ids.secSelect.children.length === 99, "reopened source has 99 sections",
-    "got " + ids.secSelect.children.length);
+  ok(ids.secCount.textContent === "99 sections", "reopened source has 99 sections",
+    "got " + JSON.stringify(ids.secCount.textContent));
   ok((ids.fileBadge.innerHTML || "").indexOf("(source)") >= 0, "badge marks source file");
   fire("btnBuild", "click");
   await tick(100);
@@ -289,7 +303,7 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   scmInput.onchange();
   await tick(1500);
   ok((ids.fileBadge.innerHTML || "").indexOf("main.scm") >= 0, "binary open loads main.scm");
-  ok(ids.secSelect.children.length === 99, "binary open yields 99 sections");
+  ok(ids.secCount.textContent === "99 sections", "binary open yields 99 sections");
   ok(!ids.errBanner.classList.contains("on"), "no error banner during whole session");
 
   console.log("\n" + pass + " passed, " + fail + " failed");
