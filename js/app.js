@@ -18,7 +18,8 @@ var S = {
   editing: false,
   opDetail: null,
   hexBytes: null,
-  hexRegions: []
+  hexRegions: [],
+  sym: { on: true, overrides: {}, match: null, modalOff: null }
 };
 
 function toast(msg, ms) {
@@ -89,6 +90,31 @@ function encodeUtf8(str) {
   return u8;
 }
 
+// localStorage that never throws (private mode, old browsers, headless tests)
+function lsGet(k) {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    return localStorage.getItem(k);
+  } catch (e) { return null; }
+}
+function lsSet(k, v) {
+  try {
+    if (typeof localStorage === "undefined") return false;
+    localStorage.setItem(k, v);
+    return true;
+  } catch (e) { return false; }
+}
+
+// FNV-1a, must match tools/build_symbols.js (staleness check for symbol names)
+function fnv1a(u8) {
+  var h = 0x811C9DC5;
+  for (var i = 0; i < u8.length; i++) {
+    h ^= u8[i];
+    h = Math.imul(h, 0x01000193);
+  }
+  return ("0000000" + (h >>> 0).toString(16)).slice(-8);
+}
+
 // surface unexpected failures instead of dying silently
 if (typeof window !== "undefined") {
   window.onerror = function (msg) { showError("Error: " + msg); };
@@ -139,9 +165,15 @@ var ed = null;
 
 function refreshBadge() {
   var n = Object.keys(S.dirty).length;
+  var sym = "";
+  if (typeof VC_SYM !== "undefined" && VC_SYM && S.sym.match !== null) {
+    sym = S.sym.match
+      ? ' <span class="symok" title="Variable names match this exact file">names \u2713</span>'
+      : ' <span class="symwarn" title="This file differs from the retail main.scm the names were built from -- most still apply, but treat them as approximate">names ~</span>';
+  }
   $("fileBadge").innerHTML = escHtml(S.fileName) +
     (n ? ' <span class="dirty">\u25cf ' + n + " edited</span>" : "") +
-    (S.bytes ? " (" + S.bytes.length + " bytes)" : "");
+    (S.bytes ? " (" + S.bytes.length + " bytes)" : "") + sym;
   var lines = 0;
   for (var i = 0; i < S.sections.length; i++) lines += S.sections[i].lines.length;
   $("fileMeta").textContent = S.sections.length ?
@@ -180,6 +212,10 @@ function loadBytesNow(name, u8) {
   S.cur = "main";
   S.editing = false;
   $("btnEdit").textContent = "Edit";
+  // symbol names were built for the retail main.scm: flag a different file
+  if (SYM && SYM.META) {
+    S.sym.match = (u8.length === SYM.META.fileSize && fnv1a(u8) === SYM.META.fnv);
+  }
   rebuildSecNav();
   showSection("main", true);
   renderProblems();
@@ -226,6 +262,7 @@ function loadSourceFile(name, text) {
   S.dirty = {};
   S.asm = null;
   S.problems = [];
+  S.sym.match = null; // no binary to compare: names apply as-is
   S.cur = secs[0].id;
   S.editing = false;
   $("btnEdit").textContent = "Edit";
@@ -355,6 +392,19 @@ function runSearch() {
   var box = $("searchResults");
   if (!q) { box.innerHTML = ""; box.style.display = "none"; return; }
   var res = Editor.searchAll(S.sections, q, 200);
+  // name-aware: "player_char" also finds every "$12"
+  if (SYM && q.charAt(0) !== "$" && res.length < 200) {
+    var seen = {};
+    res.forEach(function (r) { seen[r.sec + ":" + r.line] = 1; });
+    var hits = SYM.find(q, 15);
+    for (var h = 0; h < hits.length && res.length < 200; h++) {
+      var more = Editor.searchAll(S.sections, "$" + hits[h].off, 200 - res.length);
+      for (var i = 0; i < more.length && res.length < 200; i++) {
+        var k = more[i].sec + ":" + more[i].line;
+        if (!seen[k]) { seen[k] = 1; res.push(more[i]); }
+      }
+    }
+  }
   if (!res.length) {
     box.innerHTML = '<div class="prob">no matches</div>';
     box.style.display = "block";
@@ -381,6 +431,157 @@ function runSearch() {
 function secTitle(id) {
   var s = secById(id);
   return s ? s.title : id;
+}
+
+/* --------------------------- symbol names --------------------------- */
+
+var SYM = (typeof VC_SYM !== "undefined" && VC_SYM) ? VC_SYM : null;
+var SYM_PREF_KEY = "vcscm.sym.v1";
+var SYM_RESERVED = { DEFINE: 1, OBJECTS: 1, OBJECT: 1, MISSIONS: 1, MISSION: 1,
+  AT: 1, GLOBAL_SPACE: 1, VAR_INT: 1, VAR_FLOAT: 1, HEX: 1, END: 1, NOT: 1,
+  TIMERA: 1, TIMERB: 1 };
+
+function loadSymPrefs() {
+  var prefs = { on: true, overrides: {} };
+  var raw = lsGet(SYM_PREF_KEY);
+  if (raw) {
+    try {
+      var p = JSON.parse(raw);
+      if (p && typeof p.on === "boolean") prefs.on = p.on;
+      if (p && p.names && typeof p.names === "object") {
+        Object.keys(p.names).forEach(function (k) {
+          var off = +k;
+          var nm = p.names[k];
+          if (SYM && SYM.entry(off) && isSymNameShape(nm)) prefs.overrides[off] = nm;
+        });
+      }
+    } catch (e) { /* corrupt prefs: start clean */ }
+  }
+  S.sym.on = prefs.on;
+  S.sym.overrides = prefs.overrides;
+  Editor.setSymNames(S.sym.on);
+  Editor.setSymOverrides(S.sym.overrides);
+  updateSymBtn();
+}
+function saveSymPrefs() {
+  lsSet(SYM_PREF_KEY, JSON.stringify({ on: S.sym.on, names: S.sym.overrides }));
+}
+function updateSymBtn() {
+  $("btnSym").textContent = S.sym.on ? "Names: on" : "Names: off";
+}
+function toggleSymNames() {
+  S.sym.on = !S.sym.on;
+  saveSymPrefs();
+  Editor.setSymNames(S.sym.on);
+  updateSymBtn();
+  if (ed) ed.render();
+}
+
+function isSymNameShape(nm) {
+  return typeof nm === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(nm) && nm.length <= 40;
+}
+// error string, or "" when the name is usable for this offset
+function validateSymName(nm, off) {
+  if (!isSymNameShape(nm)) {
+    return "Use letters, digits and _ only, max 40 chars, must not start with a digit.";
+  }
+  var up = nm.toUpperCase();
+  if (SYM_RESERVED[up]) return "'" + nm + "' is a reserved word.";
+  if (typeof VC_DB !== "undefined" && VC_DB && VC_DB.byName[up] !== undefined) {
+    return "'" + nm + "' is an opcode name.";
+  }
+  var clash = null;
+  Object.keys(SYM.G).forEach(function (k) {
+    if (+k === off || clash) return;
+    var other = (S.sym.overrides[k] !== undefined) ? S.sym.overrides[k] : SYM.G[k][4];
+    if (String(other).toUpperCase() === up) clash = k;
+  });
+  if (clash !== null) return "'" + nm + "' is already used by $" + clash + ".";
+  return "";
+}
+
+function symCatWord(cat) {
+  return { const: "constant", handle: "entity handle", timer: "timer snapshot",
+    coord: "coordinate", query: "query result", copy: "variable copy",
+    conv: "conversion", flag: "boolean flag", state: "state value",
+    acc: "accumulator", var: "variable", dead: "dead store",
+    uninit: "never written" }[cat] || cat;
+}
+
+function openSymModal(off) {
+  if (!SYM) return;
+  var e = SYM.entry(off);
+  if (!e) return;
+  S.sym.modalOff = off;
+  var auto = e.name;
+  var cur = (S.sym.overrides[off] !== undefined) ? S.sym.overrides[off] : auto;
+  $("symTitle").textContent = "Rename $" + off;
+  $("symInfo").textContent = "$" + off + " \u00b7 " + (e.t === "F" ? "float" : "int") +
+    " " + symCatWord(e.cat) + " \u00b7 " + e.w + " write(s), " + e.r + " read(s)" +
+    (e.x ? " \u00b7 " + e.x : "") + " \u00b7 auto: " + auto;
+  $("symName").value = cur;
+  $("symErr").textContent = "";
+  $("symModal").style.display = "flex";
+  var inp = $("symName");
+  if (inp.focus) inp.focus();
+  if (inp.select) inp.select();
+}
+function closeSymModal() {
+  S.sym.modalOff = null;
+  $("symModal").style.display = "none";
+}
+function saveSymModal() {
+  var off = S.sym.modalOff;
+  if (off === null || !SYM) { closeSymModal(); return; }
+  var e = SYM.entry(off);
+  if (!e) { closeSymModal(); return; }
+  var nm = $("symName").value;
+  var err = validateSymName(nm, off);
+  if (err) { $("symErr").textContent = err; return; }
+  if (nm === e.name) delete S.sym.overrides[off];
+  else S.sym.overrides[off] = nm;
+  saveSymPrefs();
+  Editor.setSymOverrides(S.sym.overrides);
+  closeSymModal();
+  if (ed) ed.render();
+  toast("$" + off + " is now '" + nm + "'.");
+}
+function resetSymModal() {
+  var off = S.sym.modalOff;
+  if (off !== null && S.sym.overrides[off] !== undefined) {
+    delete S.sym.overrides[off];
+    saveSymPrefs();
+    Editor.setSymOverrides(S.sym.overrides);
+    if (ed) ed.render();
+    toast("$" + off + " is back to its automatic name.");
+  }
+  closeSymModal();
+}
+function exportSymNames() {
+  var keys = Object.keys(S.sym.overrides);
+  if (!keys.length) { toast("No custom names to export yet."); return; }
+  var u8 = encodeUtf8(JSON.stringify({ version: 1, names: S.sym.overrides }, null, 1));
+  download("vcscm_names.json", u8);
+  toast("Exported " + keys.length + " custom name(s).");
+}
+function importSymNames(name, text) {
+  var obj;
+  try { obj = JSON.parse(text); }
+  catch (e) { toast("Not a valid names file.", 4000); return; }
+  var names = (obj && obj.names) || obj;
+  if (!names || typeof names !== "object") { toast("Not a valid names file.", 4000); return; }
+  var okN = 0, badN = 0;
+  Object.keys(names).forEach(function (k) {
+    var off = +k, nm = names[k];
+    if (!SYM || !SYM.entry(off) || validateSymName(nm, off)) { badN++; return; }
+    if (nm === SYM.entry(off).name) delete S.sym.overrides[off];
+    else S.sym.overrides[off] = nm;
+    okN++;
+  });
+  saveSymPrefs();
+  Editor.setSymOverrides(S.sym.overrides);
+  if (ed) ed.render();
+  toast("Imported " + okN + " name(s)" + (badN ? ", skipped " + badN + "." : "."));
 }
 
 /* ------------------------------ assembly ------------------------------ */
@@ -793,11 +994,14 @@ function wire() {
   ed = new Editor.Editor({
     view: $("edView"), rows: $("edRows"), editWrap: $("edEdit"),
     textarea: $("editArea"), gutter: $("edGutter")
-  });
+  }, { onSymbolClick: openSymModal });
+  loadSymPrefs();
+  if (!SYM) $("btnSym").style.display = "none";
   $("edMount").addEventListener("dblclick", function () { setEditing(true); });
   $("errBanner").addEventListener("click", function () { this.classList.remove("on"); });
   document.addEventListener("keydown", function (e) {
     var k = e.key || (e.keyCode === 27 ? "Escape" : (e.keyCode === 83 ? "s" : ""));
+    if (k === "Escape" && S.sym.modalOff !== null) { closeSymModal(); return; }
     if (k === "Escape" && S.editing) setEditing(false);
     if ((e.ctrlKey || e.metaKey) && (k === "s" || k === "S")) {
       e.preventDefault();
@@ -823,6 +1027,22 @@ function wire() {
     });
   });
   $("btnEdit").addEventListener("click", function () { setEditing(!S.editing); });
+  $("btnSym").addEventListener("click", toggleSymNames);
+  $("symSave").addEventListener("click", saveSymModal);
+  $("symReset").addEventListener("click", resetSymModal);
+  $("symCancel").addEventListener("click", closeSymModal);
+  $("symModal").addEventListener("click", function (e) {
+    if (e.target === $("symModal")) closeSymModal();
+  });
+  $("symName").addEventListener("keydown", function (e) {
+    var k = e.key || (e.keyCode === 13 ? "Enter" : (e.keyCode === 27 ? "Escape" : ""));
+    if (k === "Enter") saveSymModal();
+    if (k === "Escape") closeSymModal();
+  });
+  $("symExport").addEventListener("click", exportSymNames);
+  $("symImport").addEventListener("click", function () {
+    pickFile("fileSym", ".json,.txt", false, importSymNames);
+  });
   $("secNav").addEventListener("click", function (e) {
     var b = closestEl(e.target, "button", "data-sec");
     if (b) showSection(getData(b, "sec"), true);

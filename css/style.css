@@ -384,3 +384,46 @@ nav.tabs button { flex: 0 0 auto; }
   .card { padding: 12px; }
   .guide pre { padding: 10px; font-size: 11px; }
 }
+
+/* ---------- symbol names ---------- */
+.gsym { cursor: pointer; border-bottom: 1px dotted currentColor; }
+.gsym:hover { background: rgba(34, 211, 238, 0.14); }
+.gsym.custom { border-bottom-style: solid; }
+.sc-const { color: #a3e635; }
+.sc-handle { color: var(--green); }
+.sc-coord { color: var(--cyan); }
+.sc-flag, .sc-state { color: var(--yellow); }
+.sc-timer, .sc-query, .sc-copy, .sc-conv { color: #60a5fa; }
+.sc-var, .sc-acc { color: #fb923c; }
+.sc-dead { color: var(--faint); }
+.sc-uninit { color: var(--red); border-bottom-style: wavy; }
+.symok { color: var(--green); }
+.symwarn { color: var(--yellow); }
+/* ---------- rename modal ---------- */
+.modal {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.mbox {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px;
+  width: 460px; max-width: 94vw;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+.mbox h3 { margin: 0 0 8px; font-size: 15px; }
+.syminfo { font: 12px var(--mono); color: var(--dim); margin-bottom: 10px; }
+.mbox input[type="text"] {
+  width: 100%; font: 14px var(--mono); padding: 8px 10px;
+  background: #0a0c14; color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.symerr { min-height: 20px; font-size: 12px; color: var(--red); margin: 4px 0 6px; }
+.mrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mrow .spacer { flex: 1 1 auto; }
+.mbox .fine { margin: 10px 0 0; font-size: 11px; color: var(--faint); }
+.mbox .fine code { font-family: var(--mono); }
+@media (max-width: 560px) {
+  .mrow button { flex: 1 1 30%; min-height: 40px; }
+}

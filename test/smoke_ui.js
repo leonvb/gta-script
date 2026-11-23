@@ -112,6 +112,7 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   console.log("== load ==");
   load("js/opcodes.js");
   load("js/scm.js");
+  load("js/symbols.js");
   load("js/editor.js");
   load("js/app.js");
   ok(true, "all scripts evaluated, wire() ran");
@@ -132,6 +133,76 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   ok((ids.hexDump.innerHTML || "").length > 1000, "hex dump rendered");
   ok(!ids.problems.classList.contains("on"), "no problems after load",
     ids.problems.innerHTML.slice(0, 120));
+
+  console.log("== symbol names ==");
+  const HL = sandbox.Editor.highlight;
+  ok((ids.fileBadge.innerHTML || "").indexOf("names \u2713") >= 0, "badge shows names match retail",
+    ids.fileBadge.innerHTML.slice(0, 160));
+  ok((ids.edRows.innerHTML || "").indexOf("data-sym=") >= 0, "rendered rows carry symbol spans");
+  ok(HL("0004: SET_VAR_INT $92 250").indexOf("main_tick_ms") >= 0, "names shown by default");
+  fire("btnSym", "click");
+  ok(ids.btnSym.textContent === "Names: off", "toggle button flips label");
+  const offHtml = HL("0004: SET_VAR_INT $92 250");
+  ok(offHtml.indexOf("$92") >= 0 && offHtml.indexOf("main_tick_ms") < 0, "toggle shows raw offsets");
+  fire("btnSym", "click");
+  ok(HL("0004: SET_VAR_INT $92 250").indexOf("main_tick_ms") >= 0, "toggle restores names");
+  ids.searchInput.value = "main_tick_ms";
+  fire("searchInput", "input");
+  ok(ids.searchResults.style.display === "block" &&
+     ids.searchResults.innerHTML.indexOf("$92") >= 0, "search by name finds $92 lines");
+  ids.searchInput.value = "";
+  fire("searchInput", "input");
+
+  console.log("== rename modal ==");
+  const fakeRow = { nodeType: 1, className: "coderow", parentNode: null,
+    getAttribute(k) { return k === "data-ln" ? "5" : null; } };
+  const fakeSpan = { nodeType: 1, parentNode: fakeRow,
+    getAttribute(k) { return k === "data-sym" ? "92" : null; } };
+  fire("edRows", "click", { target: fakeSpan });
+  ok(ids.symModal.style.display === "flex", "symbol click opens modal");
+  ok((ids.symTitle.textContent || "").indexOf("$92") >= 0, "modal titles the offset");
+  ids.symName.value = "WAIT";
+  fire("symSave", "click");
+  ok((ids.symErr.textContent || "").indexOf("opcode") >= 0, "opcode name rejected");
+  ids.symName.value = "0bad name!";
+  fire("symSave", "click");
+  ok((ids.symErr.textContent || "").length > 0, "malformed name rejected");
+  ids.symName.value = "tick_ms";
+  fire("symSave", "click");
+  ok(ids.symModal.style.display === "none", "modal closes on save");
+  ok(HL("0004: SET_VAR_INT $92 250").indexOf("tick_ms") >= 0, "custom name renders");
+  fire("edRows", "click", { target: fakeSpan });
+  fire("symReset", "click");
+  ok(HL("0004: SET_VAR_INT $92 250").indexOf("main_tick_ms") >= 0, "reset restores auto name");
+
+  console.log("== names export/import ==");
+  fire("symExport", "click");
+  ok((ids.toast.textContent || "").indexOf("No custom names") >= 0, "export with none warns");
+  fire("edRows", "click", { target: fakeSpan });
+  ids.symName.value = "tick_ms";
+  fire("symSave", "click");
+  fire("symExport", "click");
+  ok((ids.toast.textContent || "").indexOf("Exported 1") >= 0, "export downloads JSON",
+    ids.toast.textContent.slice(0, 60));
+  sandbox.FileReader = function () {
+    return {
+      result: null, onload: null, onerror: null,
+      readAsText() {
+        this.result = JSON.stringify({ version: 1, names: { 92: "tick_v2", 8: "WAIT" } });
+        if (this.onload) this.onload();
+      },
+      readAsArrayBuffer() {}
+    };
+  };
+  const symInput = documentStub.getElementById("fileSym");
+  fire("symImport", "click");
+  symInput.files = [{ name: "vcscm_names.json" }];
+  symInput.onchange();
+  await tick(50);
+  ok(HL("0004: SET_VAR_INT $92 250").indexOf("tick_v2") >= 0, "import applies valid names");
+  ok(HL("0053: CREATE_PLAYER 0 0.0 0.0 0.0 $8").indexOf(">player<") >= 0, "import skips invalid names");
+  ok((ids.toast.textContent || "").indexOf("Imported 1") >= 0, "import reports counts",
+    ids.toast.textContent.slice(0, 80));
 
   console.log("== assemble ==");
   fire("btnBuild", "click");
