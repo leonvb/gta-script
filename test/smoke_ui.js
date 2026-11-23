@@ -204,6 +204,43 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms || 20));
   ok((ids.toast.textContent || "").indexOf("Imported 1") >= 0, "import reports counts",
     ids.toast.textContent.slice(0, 80));
 
+  console.log("== toolbar names export/import ==");
+  ok(ids.btnNamesExport.textContent === "Export names (1)", "export button shows rename count",
+    "got " + JSON.stringify(ids.btnNamesExport.textContent));
+  fire("btnNamesExport", "click");
+  ok((ids.toast.textContent || "").indexOf("another browser or computer") >= 0,
+    "export toast explains portability", ids.toast.textContent.slice(0, 90));
+  function symFileReader(json) {
+    sandbox.FileReader = function () {
+      return {
+        result: null, onload: null, onerror: null,
+        readAsText() { this.result = json; if (this.onload) this.onload(); },
+        readAsArrayBuffer() {}
+      };
+    };
+  }
+  symFileReader(JSON.stringify({ version: 1, app: "vcscm-names",
+    forFile: { name: "main.scm", size: 1269133, fnv: "16239d9a" },
+    names: { 268: "spawn_x", 92: "tick_v3" } }));
+  fire("btnNamesImport", "click");
+  symInput.files = [{ name: "vcscm_names.json" }];
+  symInput.onchange();
+  await tick(50);
+  ok(HL("0004: SET_VAR_INT $268 0").indexOf("spawn_x") >= 0, "toolbar import applies names");
+  ok((ids.toast.textContent || "").indexOf("Imported 2") >= 0 &&
+     (ids.toast.textContent || "").indexOf("different file") < 0,
+    "matching fingerprint imports quietly", ids.toast.textContent.slice(0, 100));
+  ok(ids.btnNamesExport.textContent === "Export names (2)", "count updates after import");
+  symFileReader(JSON.stringify({ version: 1, names: { 268: "spawn_y" },
+    forFile: { name: "other.scm", size: 10, fnv: "deadbeef" } }));
+  fire("btnNamesImport", "click");
+  symInput.files = [{ name: "vcscm_names.json" }];
+  symInput.onchange();
+  await tick(50);
+  ok(HL("0004: SET_VAR_INT $268 0").indexOf("spawn_y") >= 0, "foreign file names still apply");
+  ok((ids.toast.textContent || "").indexOf("different file") >= 0,
+    "foreign fingerprint warns", ids.toast.textContent.slice(0, 120));
+
   console.log("== assemble ==");
   fire("btnBuild", "click");
   await tick(100);

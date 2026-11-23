@@ -19,7 +19,7 @@ var S = {
   opDetail: null,
   hexBytes: null,
   hexRegions: [],
-  sym: { on: true, overrides: {}, match: null, modalOff: null }
+  sym: { on: true, overrides: {}, match: null, modalOff: null, fileHash: null, fileName: "" }
 };
 
 function toast(msg, ms) {
@@ -213,8 +213,10 @@ function loadBytesNow(name, u8) {
   S.editing = false;
   $("btnEdit").textContent = "Edit";
   // symbol names were built for the retail main.scm: flag a different file
+  S.sym.fileHash = fnv1a(u8);
+  S.sym.fileName = name;
   if (SYM && SYM.META) {
-    S.sym.match = (u8.length === SYM.META.fileSize && fnv1a(u8) === SYM.META.fnv);
+    S.sym.match = (u8.length === SYM.META.fileSize && S.sym.fileHash === SYM.META.fnv);
   }
   rebuildSecNav();
   showSection("main", true);
@@ -263,6 +265,7 @@ function loadSourceFile(name, text) {
   S.asm = null;
   S.problems = [];
   S.sym.match = null; // no binary to compare: names apply as-is
+  S.sym.fileHash = null; // unknown bytes: exports carry no fingerprint
   S.cur = secs[0].id;
   S.editing = false;
   $("btnEdit").textContent = "Edit";
@@ -466,8 +469,11 @@ function loadSymPrefs() {
 function saveSymPrefs() {
   lsSet(SYM_PREF_KEY, JSON.stringify({ on: S.sym.on, names: S.sym.overrides }));
 }
+function symCustomCount() { return Object.keys(S.sym.overrides).length; }
 function updateSymBtn() {
   $("btnSym").textContent = S.sym.on ? "Names: on" : "Names: off";
+  var n = symCustomCount();
+  $("btnNamesExport").textContent = n ? "Export names (" + n + ")" : "Export names";
 }
 function toggleSymNames() {
   S.sym.on = !S.sym.on;
@@ -543,6 +549,7 @@ function saveSymModal() {
   saveSymPrefs();
   Editor.setSymOverrides(S.sym.overrides);
   closeSymModal();
+  updateSymBtn();
   if (ed) ed.render();
   toast("$" + off + " is now '" + nm + "'.");
 }
@@ -555,14 +562,21 @@ function resetSymModal() {
     if (ed) ed.render();
     toast("$" + off + " is back to its automatic name.");
   }
+  updateSymBtn();
   closeSymModal();
 }
 function exportSymNames() {
   var keys = Object.keys(S.sym.overrides);
-  if (!keys.length) { toast("No custom names to export yet."); return; }
-  var u8 = encodeUtf8(JSON.stringify({ version: 1, names: S.sym.overrides }, null, 1));
+  if (!keys.length) {
+    toast("No custom names to export yet -- click any variable name to rename it first.");
+    return;
+  }
+  var payload = { version: 1, app: "vcscm-names", names: S.sym.overrides,
+    forFile: { name: S.sym.fileName || S.fileName,
+      size: S.bytes ? S.bytes.length : 0, fnv: S.sym.fileHash } };
+  var u8 = encodeUtf8(JSON.stringify(payload, null, 1));
   download("vcscm_names.json", u8);
-  toast("Exported " + keys.length + " custom name(s).");
+  toast("Exported " + keys.length + " custom name(s) -- import this file on another browser or computer.");
 }
 function importSymNames(name, text) {
   var obj;
@@ -580,8 +594,14 @@ function importSymNames(name, text) {
   });
   saveSymPrefs();
   Editor.setSymOverrides(S.sym.overrides);
+  updateSymBtn();
   if (ed) ed.render();
-  toast("Imported " + okN + " name(s)" + (badN ? ", skipped " + badN + "." : "."));
+  var note = "";
+  if (obj.forFile && obj.forFile.fnv && S.sym.fileHash &&
+      obj.forFile.fnv !== S.sym.fileHash) {
+    note = " (made for a different file: " + (obj.forFile.name || "unknown") + ")";
+  }
+  toast("Imported " + okN + " name(s)" + (badN ? ", skipped " + badN : "") + note + ".");
 }
 
 /* ------------------------------ assembly ------------------------------ */
@@ -996,7 +1016,11 @@ function wire() {
     textarea: $("editArea"), gutter: $("edGutter")
   }, { onSymbolClick: openSymModal });
   loadSymPrefs();
-  if (!SYM) $("btnSym").style.display = "none";
+  if (!SYM) {
+    $("btnSym").style.display = "none";
+    $("btnNamesExport").style.display = "none";
+    $("btnNamesImport").style.display = "none";
+  }
   $("edMount").addEventListener("dblclick", function () { setEditing(true); });
   $("errBanner").addEventListener("click", function () { this.classList.remove("on"); });
   document.addEventListener("keydown", function (e) {
@@ -1028,6 +1052,10 @@ function wire() {
   });
   $("btnEdit").addEventListener("click", function () { setEditing(!S.editing); });
   $("btnSym").addEventListener("click", toggleSymNames);
+  $("btnNamesExport").addEventListener("click", exportSymNames);
+  $("btnNamesImport").addEventListener("click", function () {
+    pickFile("fileSym", ".json,.txt", false, importSymNames);
+  });
   $("symSave").addEventListener("click", saveSymModal);
   $("symReset").addEventListener("click", resetSymModal);
   $("symCancel").addEventListener("click", closeSymModal);
